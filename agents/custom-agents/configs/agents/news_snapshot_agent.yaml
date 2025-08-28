@@ -1,0 +1,159 @@
+# News Snapshot Agent Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: DEBUG
+  log_file: news_snapshot_agent.log
+
+# Include shared configuration
+!include ../shared_config.yaml
+
+apps:
+  - name: news_snapshot_agent
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE}
+      agent_name: "NewsSnapshotAgent"
+      display_name: "News Snapshot Agent"
+      supports_streaming: true
+      
+      # LLM model configuration
+      model: *general_model
+      
+      # Agent instructions
+      instruction: |
+        You are a professional news snapshot agent that provides comprehensive news information from Google News RSS feeds.
+        
+        Your capabilities include:
+        1. Getting news for any location from Google News RSS feeds
+        2. Filtering news by date ranges (ISO format, relative dates like "7d", "24h")
+        3. Creating news snapshots with summaries and trending topics
+        4. Searching news by keywords within locations
+        5. Fetching weather-related news with categorization (temperature, storms, precipitation, climate, warnings)
+        6. Extracting trending topics from news articles
+        7. Providing detailed metadata about news sources and publication dates
+        
+        Guidelines:
+        - Always specify the location clearly in your responses
+        - Include publication dates and sources for credibility
+        - Present news in a structured, easy-to-read format
+        - Handle date filtering requests intelligently (support formats like "7d", "24h", "1w", "2024-01-01")
+        - Provide summaries when appropriate to help users understand the news landscape
+        - Mention the source (Google News RSS) and timestamp for data freshness
+        - Handle errors gracefully with helpful error messages
+        - Offer to search for specific keywords or topics when relevant
+        
+        When users ask for news about a location, use the appropriate tools to fetch real-time data.
+        Present information in a clear, organized manner with proper attribution.
+        
+        Example responses:
+        - "Here are the latest news articles for New York (retrieved from Google News RSS at 2024-01-01T12:00:00Z):"
+        - "I found 15 news articles for San Francisco from the last 7 days. Top stories include..."
+        - "Searching for 'technology' news in Austin, I found 8 relevant articles..."
+        - "Found 12 weather-related articles for Miami, categorized as: temperature (3), storms (5), precipitation (2), warnings (2)"
+        - "Trending topics in Chicago include: economy (15%), sports (12%), politics (10%)..."
+      
+      # Lifecycle functions
+      agent_init_function:
+        module: "src.news_snapshot_agent.lifecycle"
+        name: "initialize_news_snapshot_agent"
+        base_path: .
+      
+      agent_cleanup_function:
+        module: "src.news_snapshot_agent.lifecycle"
+        name: "cleanup_news_snapshot_agent"
+        base_path: .
+      
+      # Tools configuration
+      tools:
+        # Basic news retrieval tool
+        - tool_type: python
+          component_module: "src.news_snapshot_agent.tools"
+          component_base_path: .
+          function_name: "get_news_for_location"
+          tool_description: "Get news for a specific location from Google News RSS feed"
+        
+        # News with date filtering tool
+        - tool_type: python
+          component_module: "src.news_snapshot_agent.tools"
+          component_base_path: .
+          function_name: "get_news_with_date_filter"
+          tool_description: "Get news for a location with date range filtering (supports ISO format, relative dates like '7d', '24h')"
+        
+        # Comprehensive news snapshot tool
+        - tool_type: python
+          component_module: "src.news_snapshot_agent.tools"
+          component_base_path: .
+          function_name: "get_news_snapshot"
+          tool_description: "Get a comprehensive news snapshot for a location with summary and trending topics"
+        
+        # Keyword search tool
+        - tool_type: python
+          component_module: "src.news_snapshot_agent.tools"
+          component_base_path: .
+          function_name: "search_news_by_keywords"
+          tool_description: "Search for news articles containing specific keywords in a location"
+        
+        # Weather news tool
+        - tool_type: python
+          component_module: "src.news_snapshot_agent.tools"
+          component_base_path: .
+          function_name: "get_weather_news"
+          tool_description: "Fetch weather-related news articles for a location with categorization"
+        
+        # Trending topics tool
+        - tool_type: python
+          component_module: "src.news_snapshot_agent.tools"
+          component_base_path: .
+          function_name: "get_trending_topics"
+          tool_description: "Extract trending topics from news articles for a location"
+        
+        # Built-in artifact tools for file operations
+        - tool_type: builtin-group
+          group_name: "artifact_management"
+    
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+
+      artifact_handling_mode: "reference"
+      enable_embed_resolution: true
+      enable_artifact_content_instruction: true
+      
+      # Agent card
+      agent_card:
+        description: "Professional news snapshot agent providing comprehensive news information from Google News RSS feeds with location-based filtering and date ranges"
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text", "file"]
+        skills:
+          - id: "get_news_for_location"
+            name: "Get News for Location"
+            description: "Retrieve news articles for any location from Google News RSS"
+          - id: "get_news_with_date_filter"
+            name: "Get News with Date Filter"
+            description: "Get news filtered by date ranges (ISO format, relative dates like '7d', '24h')"
+          - id: "get_news_snapshot"
+            name: "Get News Snapshot"
+            description: "Get comprehensive news snapshot with summary and trending topics"
+          - id: "search_news_by_keywords"
+            name: "Search News by Keywords"
+            description: "Search for news articles containing specific keywords in a location"
+          - id: "get_weather_news"
+            name: "Get Weather News"
+            description: "Fetch weather-related news articles for a location with categorization"
+          - id: "get_trending_topics"
+            name: "Get Trending Topics"
+            description: "Extract trending topics from news articles for a location"
+      
+      # Discovery & Communication
+      agent_card_publishing: 
+        interval_seconds: 10
+      agent_discovery: 
+        enabled: true
+
+      inter_agent_communication:
+        allow_list: ["*"] 
+        deny_list: [] 
+        request_timeout_seconds: 600

@@ -1,0 +1,66 @@
+# Filesystem MCP Agent Configuration
+# Minimal YAML-only MCP agent using SAM's built-in runner
+
+!include ../shared_config.yaml
+
+apps:
+  - name: filesystem_mcp_agent_app
+    app_module: solace_agent_mesh.agent.sac.app
+    app_base_path: .
+    broker:
+      <<: *broker_connection
+    app_config:
+      agent_name: "FilesystemMCPAgent"
+      display_name: "File System MCP Agent"
+      supports_streaming: true
+      model: *general_model
+      
+      instruction: |
+        You are a Filesystem MCP Agent that provides file system access and management capabilities.
+        You can read and write files, list directories, create and delete files and directories,
+        and perform various file system operations.
+        
+        Use the available MCP tools to perform file system tasks as requested by users.
+        Always provide clear explanations of what you're doing and the results you obtain.
+        
+        Available capabilities:
+        - Read file contents
+        - Write content to files
+        - List directory contents
+        - Create directories
+        - Delete files and directories
+        - Navigate file system
+        - Check file and directory properties
+        
+        When working with files, always use the working directory: /tmp/samv2
+        Be careful with file operations and always confirm before deleting files.
+      
+      tools:
+        - tool_type: mcp
+          connection_params:
+            type: stdio
+            command: "npx"
+            args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp/samv2"]
+      
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+      
+      agent_card:
+        description: "File system access and management capabilities through MCP integration"
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text", "file"]
+        skills: [
+          "file system access",
+          "file management",
+          "directory operations",
+          "file reading",
+          "file writing",
+          "file deletion",
+          "directory creation"
+        ]
+      
+      agent_card_publishing: { interval_seconds: 10 }
+      agent_discovery: { enabled: true }
+      inter_agent_communication:
+        allow_list: ["*"]
+        request_timeout_seconds: 30

@@ -1,0 +1,955 @@
+# Instructions for Solace Agent Mesh Development
+
+## Project Overview
+This workspace is dedicated to exploring and building agents for **Solace Agent Mesh (SAM)** - an open-source framework that integrates Google Agent Development Kit (ADK) with Solace AI Connector (SAC) to create a "Universal A2A Agent Host" for scalable, distributed AI agent communication.
+
+## Context & Background
+- **Primary Goal**: Learn SAM fundamentals and build various types of agents, gateways, and plugins
+- **Framework Focus**: Event-driven architecture with A2A (Agent-to-Agent) protocol
+- **Integration Points**: Google ADK + Solace AI Connector + Solace PubSub+ Event Broker
+- **Documentation Base**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/
+
+## Solace Agent Mesh Fundamentals
+
+### Core Architecture
+- **Event-Driven Foundation**: Built on Solace PubSub+ Event Broker for high-throughput, fault-tolerant messaging
+- **Neural Network-like Event Mesh**: Asynchronous communication layer where messages flow between agents, gateways, and external systems
+- **Decoupled Architecture**: Senders and receivers operate independently with graceful failure recovery
+
+### Key Components
+1. **Agents** - Specialized AI components performing specific tasks
+2. **Gateways** - Bridge components connecting mesh to external systems (web UIs, APIs, Slack, etc.)
+3. **Event Mesh** - Communication backbone using A2A protocol
+4. **Tools** - Custom functions, Python code, MCP tools that agents utilize
+5. **Service Providers** - Specialized components for data persistence, API communication, system integration
+
+### Solace AI Event Connector (SAC)
+- **Purpose**: Seamlessly integrate AI capabilities into event-driven architecture
+- **Architecture**: Input Component → Processing Components → Output Component
+- **Features**: LangChain/LiteLLM integration, custom Python components, YAML configuration
+- **Processing Model**: Thread-based, acknowledgment system, parallel processing support
+
+## Agent Types & Capabilities
+
+### Supported Agent Categories
+1. **Data Processing Agents**: Database queries, ETL pipelines, analytics, data transformation
+2. **Content Processing Agents**: Text analysis, document processing, translation, content generation
+3. **Integration Agents**: API connectors, SaaS platform integration, enterprise system bridges
+4. **Analysis Agents**: Image analysis, sentiment analysis, statistical modeling, trend detection
+5. **Workflow Agents**: Task routing, approval workflows, process coordination, error handling
+6. **Human-AI Interaction Agents**: Chat interfaces, web UI gateways, notification systems
+
+### Agent Characteristics
+- **Specialization**: Focused on specific, well-defined tasks
+- **Collaboration**: Work with other agents through A2A protocol
+- **Auto-Discovery**: Automatically publish capabilities to mesh
+- **Exponential Enhancement**: Each agent enhances others' capabilities
+- **Configuration-Driven**: YAML-based behavior control
+
+## Development Patterns
+
+### Agent Development Workflow
+1. **Requirements Analysis** - Define specific use case and requirements
+2. **Architecture Design** - Plan agent's role in mesh ecosystem
+3. **Implementation** - Build core logic using Google ADK patterns
+4. **Configuration** - Create YAML configs for mesh integration
+5. **Testing** - Validate functionality and mesh communication
+6. **Deployment** - Package and deploy to SAM environment
+
+### Gateway Development Pattern
+1. **Protocol Analysis** - Understand external system requirements
+2. **Interface Design** - Plan gateway's API and functionality
+3. **Agent Integration** - Connect to appropriate agents in mesh
+4. **Security Implementation** - Add authentication and authorization
+5. **Error Handling** - Implement robust error management
+6. **Testing & Deployment** - Validate and deploy gateway
+
+### Plugin Development Pattern
+1. **Plugin Type Selection** - Choose appropriate plugin category
+2. **Interface Implementation** - Follow SAM's plugin interfaces
+3. **Configuration Setup** - Create YAML configuration files
+4. **Integration Testing** - Test with mesh environment
+5. **Documentation** - Provide usage and configuration docs
+6. **Packaging** - Package for distribution and deployment
+
+## Technical Implementation Details
+
+### Core Technologies
+- **Python**: Primary development language
+- **Google ADK**: Agent development framework
+- **LangChain**: AI model integration and chaining
+- **LiteLLM**: Unified interface for multiple AI providers
+- **YAML**: Configuration management
+- **Solace PubSub+**: Event broker for messaging
+
+### Key Features
+- **Event-Driven Communication**: Asynchronous messaging through event mesh
+- **A2A Protocol**: Standardized agent-to-agent communication
+- **Tool Integration**: Custom Python functions, MCP tools, external APIs
+- **Observability**: Complete visibility into communication flows
+- **Security**: Fine-grained access control and authorization
+- **Scalability**: Enterprise-grade performance and reliability
+
+### Configuration Management
+- YAML-based configuration for agents, gateways, and flows
+- Behavior control without code changes
+- Security and access control settings
+- Integration parameters and scaling configurations
+
+## Real-World Applications
+
+## **🔑 Key Lessons Learned from Agent Development**
+
+### **Environment Configuration Best Practices**
+- **Always create `.env.sample`**: Document all required environment variables with clear instructions
+- **API Key Management**: Use environment variables for API keys, never hardcode them
+- **Security**: Include `.gitignore` to prevent committing sensitive `.env` files
+- **Documentation**: Provide clear setup instructions in README.md
+
+### **Testing Strategy Insights**
+- **Dual Test Approach**: Separate API tests (real calls) from tools tests (mocked dependencies)
+- **Mock Import Paths**: Use exact import paths for mocking (e.g., `'services.exchange_rate_service.ExchangeRateService'`)
+- **Test Environment**: Ensure tests can run with or without API keys
+- **Mocking Challenges**: Be aware that mocking complex service layers requires careful import path management
+
+### **Service Layer Architecture**
+- **Separation of Concerns**: Create dedicated service classes for API communication, validation, caching, and rate limiting
+- **Async Patterns**: Use async context managers for HTTP clients
+- **Error Handling**: Centralize error handling in service classes
+- **State Management**: Track usage statistics and maintain agent state
+
+### **Common Pitfalls to Avoid**
+- **Import Path Issues**: Incorrect mocking paths can cause tests to run real code instead of mocks
+- **Missing Dependencies**: Always include `pytest-asyncio` for async testing
+- **Environment Setup**: Missing `.env.sample` makes agent setup difficult for users
+- **Documentation Gaps**: Incomplete setup instructions lead to user confusion
+
+### **Success Patterns**
+- **Comprehensive Documentation**: Both README.md and API_REFERENCE.md are essential
+- **Robust Error Handling**: Handle API failures, rate limits, and validation errors gracefully
+- **User-Friendly Setup**: Clear step-by-step instructions with examples
+- **Production Ready**: Include rate limiting, caching, and monitoring capabilities
+
+### **🔧 SAM Environment Integration Lessons**
+
+#### **Agent State Management in SAM**
+- **ToolContext vs HostComponent**: Understand the difference between `ToolContext` (passed to tools) and `HostComponent` (used in lifecycle)
+- **State Access Methods**: SAM provides multiple ways to access agent state:
+  - `tool_context.get_agent_specific_state("key", default)` (preferred SAM method)
+  - `tool_context.state.agent_state` (ADK method)
+  - Environment variables fallback (when state is unavailable)
+- **State Storage**: Use `host_component.set_agent_specific_state("key", value)` in lifecycle functions
+- **Robust State Access**: Always implement fallback mechanisms for state access failures
+
+#### **Function Signature Requirements**
+- **ADK Compatibility**: Function signatures must be compatible with Google ADK's automatic function calling:
+  ```python
+  async def function_name(
+      param1: str,
+      tool_context: Optional[ToolContext] = None,
+      tool_config: Optional[Dict[str, Any]] = None
+  ) -> Dict[str, Any]:
+  ```
+- **Type Hints**: Always include proper type hints for all parameters
+- **Default Values**: Avoid default values that cause ADK parsing issues
+- **Import Requirements**: Import `ToolContext` from `google.adk.tools` and `log` from `solace_ai_connector.common.log`
+
+#### **Environment Variable Handling**
+- **Multiple Loading Strategies**: Implement robust environment variable loading:
+  ```python
+  # Try multiple locations for .env file
+  env_locations = [
+      os.path.join(os.getcwd(), '.env'),  # Current working directory
+      os.path.join(os.path.dirname(__file__), '.env'),  # Script directory
+      os.path.join(project_root, '.env'),  # Project root
+      '.env'  # Current directory (fallback)
+  ]
+  ```
+- **Fallback Mechanisms**: Always provide fallback to environment variables when agent state is unavailable
+- **API Key Validation**: Validate API keys for presence, format, and basic requirements
+
+#### **Debugging in SAM Environment**
+- **Logging Strategy**: Use `log.info()` and `log.error()` for production logging, avoid `print()` statements
+- **State Debugging**: Add specific logging for state access attempts and failures
+- **Environment Debugging**: Log environment variable availability and API key status
+- **Error Context**: Provide detailed error messages with actionable information
+
+#### **Common SAM Integration Issues**
+- **"Agent not properly initialized"**: Usually means agent state is empty or inaccessible
+- **Function signature parsing errors**: Caused by incompatible parameter types or default values
+- **Missing state access methods**: ToolContext might not have expected methods in different SAM versions
+- **Environment variable availability**: API keys might not be available in SAM environment
+
+#### **Best Practices for SAM Agents**
+- **Robust State Access**: Implement multiple fallback mechanisms for state access
+- **Environment Variable Fallback**: Always fall back to environment variables when state is unavailable
+- **Comprehensive Error Handling**: Handle all possible failure modes gracefully
+- **Production Logging**: Use proper logging instead of print statements
+- **Function Signature Compliance**: Follow ADK requirements strictly
+- **Lifecycle Integration**: Ensure proper initialization and cleanup in lifecycle functions
+
+#### **Testing SAM Integration**
+- **Mock SAM Dependencies**: Always mock `google.adk.tools` and `solace_ai_connector.common.log` in tests
+- **Test State Access**: Test both successful and failed state access scenarios
+- **Test Environment Fallback**: Verify fallback to environment variables works correctly
+- **Test Function Signatures**: Ensure function signatures work with ADK automatic calling
+- **Integration Testing**: Test agents in actual SAM environment, not just unit tests
+
+### Use Cases
+- **Enterprise Automation**: Customer service routing, data processing pipelines
+- **AI Task Specialization**: Multi-step workflows with specialized agents
+- **Human-AI Collaboration**: Approval workflows, expert guidance systems
+- **Data-Driven Intelligence**: Database queries, transformations, visualizations
+- **System Integration**: Legacy system modernization, API orchestration
+
+### Success Patterns
+- Agents solving specific business problems
+- Agents enhancing other agents' capabilities
+- Agents bridging different data sources or systems
+- Agents providing new interfaces or interaction methods
+
+## Development Approach & Best Practices
+
+### Design Principles
+1. **Specialization** - Each agent should have clear, focused purpose
+2. **Collaboration** - Design for working with other agents
+3. **Extensibility** - Build to enhance system capabilities exponentially
+4. **Integration** - Connect to real-world data sources and systems
+5. **Observability** - Plan for monitoring and debugging
+6. **Security** - Implement proper authentication and authorization
+
+### Implementation Guidelines
+- Start with core functionality, expand incrementally
+- Use configuration-driven behavior control
+- Implement proper error handling and recovery
+- Design for scalability and performance
+- Follow security best practices
+- Plan for testing and validation
+
+## Current Capabilities Assessment
+
+### What Can Be Built
+✅ **All Agent Types**: Data processing, content processing, integration, analysis, workflow, human-AI interaction
+✅ **All Gateway Types**: Interface, system integration, protocol gateways
+✅ **All Plugin Types**: Agent plugins, tool plugins, gateway plugins, utility plugins
+✅ **SAC Components**: Input/output components, processing components, custom Python components
+✅ **Flow Configurations**: Complex processing pipelines, scalable configurations, resilient systems
+
+### Development Confidence
+- **High** for agent development using established patterns
+- **High** for gateway and plugin creation
+- **High** for SAC component development and flow configuration
+- **High** for integration with external systems and AI models
+
+## Next Steps & Exploration Areas
+
+### Immediate Opportunities
+1. **Build Sample Agents** - Create examples of different agent types
+2. **Develop Gateways** - Build interface and integration gateways
+3. **Create Plugins** - Develop custom tools and utilities
+4. **Configure Flows** - Design SAC processing pipelines
+5. **Test Integration** - Validate mesh communication and collaboration
+
+### Advanced Exploration
+- Multi-agent collaboration patterns
+- Complex workflow orchestration
+- Enterprise system integration
+- Performance optimization and scaling
+- Security and access control implementation
+
+## Documentation & Resources
+
+### Main Documentation
+- **Primary Documentation**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/
+- **Introduction**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/getting-started/introduction
+
+### Getting Started
+- **Installation**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/getting-started/installation
+- **Quick Start**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/getting-started/quick-start
+- **Component Overview**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/getting-started/component-overview
+- **Configurations**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/getting-started/configurations
+
+### User Guide
+- **Solace AI Event Connector**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/user-guide/solace-ai-connector
+- **Structure**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/user-guide/structure
+- **Create Agents**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/user-guide/create-agents
+- **Create Gateways**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/user-guide/create-gateways
+- **Creating Service Providers**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/user-guide/creating-service-providers
+- **Built-in Tools**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/user-guide/built-in-tools
+
+### Additional Resources
+- **Components and Concepts**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/components-and-concepts
+- **Deployment**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/deployment
+- **Tutorials**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/tutorials
+- **GitHub Repository**: Available through documentation links
+
+## Commands & Aliases
+
+### SAM Runtime Commands
+- **Run SAM**: `cd /Users/vengatagirivenkatesan/sam/v1 && sam run`
+- **Run Specific Agent**: `cd /Users/vengatagirivenkatesan/sam/v1 && sam run configs/agents/<agent_name>.yaml`
+- **Start Agent Script**: `./start_agent.sh <agent_name> [sam_path]`
+
+### Agent Development Commands
+- **Deploy Agent**: `python deploy_agent.py <sam_path> <agent_name> [source_dir]`
+- **Verify Deployment**: `python verify_agent.py <sam_path> <agent_name>`
+- **Test API**: `python src/<agent_name>/tests/test_<api>_api.py`
+
+### Workspace Navigation
+- **Current Workspace**: `/Users/vengatagirivenkatesan/gitsolace/agentic/spec-to-agent/sam-project`
+- **SAM Installation**: `/Users/vengatagirivenkatesan/sam/v1`
+
+### Usage Examples
+```bash
+# Deploy agent with custom name
+python deploy_agent.py /Users/vengatagirivenkatesan/sam/v1 my-agent agent_source_dir
+
+# Run deployed agent
+cd /Users/vengatagirivenkatesan/sam/v1 && sam run configs/agents/my-agent.yaml
+
+# Verify deployment
+python verify_agent.py /Users/vengatagirivenkatesan/sam/v1 my-agent
+
+# Start agent using script
+./start_agent.sh my-agent
+```
+
+## Agent Development Guidelines
+
+### **📋 Agent Development Checklist**
+
+#### **🔴 REQUIRED COMPONENTS (Must Complete)**
+
+**Agent Identity**
+- [ ] **Agent Name**: Internal name (e.g., "ip_geolocation_agent", "weather_trend_agent")
+- [ ] **Display Name**: Human-readable name (e.g., "IP Geolocation Agent", "Weather Trend Agent")
+- [ ] **Description**: Brief description of what the agent does (1-2 sentences)
+- [ ] **Version**: Version number (e.g., "1.0.0")
+
+**Core Functionality**
+- [ ] **Primary Function**: Main capability the agent provides
+- [ ] **Secondary Functions**: List 2-3 additional capabilities
+- [ ] **Data Source**: Primary API or data source (include URL)
+- [ ] **Authentication**: How to access the data (none, API key, OAuth, etc.)
+
+**Tool Functions**
+- [ ] **Function 1**: [FUNCTION_NAME]
+  - Purpose: What this function does
+  - Parameters: List of input parameters with types
+  - Returns: What the function returns
+  - Example: Simple usage example
+- [ ] **Function 2**: [FUNCTION_NAME] (repeat for all functions)
+- [ ] **Input/Output Format**: JSON structure the agent should return
+- [ ] **Error Responses**: How errors should be formatted
+
+**Natural Language Examples**
+- [ ] **Example Queries**: List 3-5 example user questions the agent should handle
+- [ ] **Example Responses**: Show how the agent should respond to each query
+
+**Testing Requirements**
+- [ ] **API Tests**: What external APIs need direct testing (`test_<agent>_api.py`)
+- [ ] **Tools Tests**: What agent logic needs testing with mocked dependencies (`test_<agent>.py`)
+- [ ] **Test Data**: Sample data for testing (success cases, error cases, edge cases)
+- [ ] **Test Structure**: Use proper import structure with sys.path adjustments
+- [ ] **Mock Strategy**: Mock SAM dependencies and use AsyncMock for async functions
+- [ ] **Mock Import Paths**: Use correct import paths for mocking (e.g., 'services.exchange_rate_service.ExchangeRateService')
+
+**Documentation Requirements**
+- [ ] **README Content**: What should be in the quick start guide
+- [ ] **API Reference Content**: What detailed documentation is needed
+- [ ] **Examples**: What usage examples to include
+
+**Dependencies & Requirements**
+- [ ] **Python Packages**: List of required Python packages with versions
+- [ ] **Agent-Specific Requirements**: Create agent-specific requirements.txt with minimal dependencies only
+- [ ] **Environment Variables**: Define required environment variables and create .env.sample file
+- [ ] **API Key Management**: Specify how API keys should be managed (environment variables, .env files)
+
+**SAM Environment Integration**
+- [ ] **Function Signatures**: Follow Google ADK automatic function calling requirements
+- [ ] **State Management**: Plan for multiple state access methods with fallbacks
+- [ ] **Lifecycle Integration**: Plan initialization and cleanup functions
+- [ ] **Environment Variable Fallback**: Always provide fallback when agent state is empty
+- [ ] **Error Handling**: Handle common SAM integration issues
+- [ ] **Logging Strategy**: Use proper logging for production
+
+#### **🟡 OPTIONAL COMPONENTS (Complete as Needed)**
+
+**Advanced Features**
+- [ ] **Rate Limiting**: API rate limits or usage restrictions
+- [ ] **Caching**: Whether to cache responses and for how long
+- [ ] **Fallback APIs**: Backup data sources if primary fails
+- [ ] **Data Validation**: Input validation rules
+- [ ] **Statistics Tracking**: What metrics to collect and store
+
+**Service Layer Design**
+- [ ] **Service Classes**: Async HTTP clients with rate limiting and retry logic
+- [ ] **Error Handling**: Centralized error handling in service classes
+- [ ] **Connection Management**: HTTP session reuse and connection pooling
+- [ ] **Response Processing**: Data transformation and validation
+
+### **📁 Standard Agent Structure**
+```
+src/<agent_name>/
+├── __init__.py
+├── lifecycle.py
+├── tools.py
+├── requirements.txt              # Agent-specific dependencies
+├── .env.sample                   # Environment variables template
+├── .gitignore                    # Git ignore rules
+├── services/                     # Service layer (if needed)
+│   ├── __init__.py
+│   ├── <service_name>.py
+│   ├── rate_limiter.py           # Rate limiting service
+│   ├── cache_manager.py          # Caching service
+│   └── <validator>.py            # Input validation service
+├── tests/
+│   ├── test_<agent>_api.py       # Direct API testing
+│   └── test_<agent>.py           # Tools/function testing
+├── API_REFERENCE.md              # Detailed API documentation
+└── README.md                     # Quick start & overview
+
+configs/agents/
+└── <agent_name>.yaml
+```
+
+### **🔧 Function Signature Requirements**
+
+#### **ADK-Compatible Function Signatures**
+All agent functions must follow this exact pattern for Google ADK automatic function calling:
+
+```python
+async def function_name(
+    param1: str,
+    tool_context: Optional[ToolContext] = None,
+    tool_config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Function description
+    
+    Args:
+        param1: Parameter description
+        tool_context: Tool context object (ADK requirement)
+        tool_config: Tool configuration (ADK requirement)
+        
+    Returns:
+        Dict with standardized response format
+    """
+```
+
+#### **Required Imports**
+```python
+from typing import Dict, Any, Optional
+from google.adk.tools import ToolContext
+from solace_ai_connector.common import log
+```
+
+### **🔄 Agent State Management**
+
+#### **State Access Methods**
+Implement robust state access with multiple fallback mechanisms:
+
+```python
+def _get_agent_state(tool_context, log_identifier):
+    """Helper function to get agent state from tool context"""
+    agent_state = {}
+    import os
+    env_api_key = os.getenv('API_KEY_NAME')
+    
+    if tool_context:
+        # Try SAM method first
+        if hasattr(tool_context, 'get_agent_specific_state'):
+            try:
+                agent_state = tool_context.get_agent_specific_state("agent_state", {})
+            except Exception as e:
+                log.error(f"{log_identifier} Error calling get_agent_specific_state: {e}")
+                agent_state = {}
+        # Fall back to ADK method
+        elif hasattr(tool_context, 'state'):
+            try:
+                agent_state = getattr(tool_context.state, 'agent_state', {})
+            except Exception as e:
+                log.error(f"{log_identifier} Error accessing tool_context.state: {e}")
+                agent_state = {}
+        else:
+            # Fallback to environment variables
+            agent_state = create_state_from_environment()
+    else:
+        # No tool context, use environment variables directly
+        agent_state = create_state_from_environment()
+    
+    # Smart fallback: create state from environment if empty but API key available
+    if not agent_state and env_api_key:
+        log.info(f"{log_identifier} Agent state is empty but API key available, creating state from environment")
+        agent_state = create_state_from_environment()
+    
+    return agent_state
+```
+
+#### **Lifecycle State Management**
+```python
+def initialize_agent_name(host_component):
+    """Initialize agent state"""
+    agent_state = {
+        'api_key': os.getenv('API_KEY_NAME'),
+        'base_url': os.getenv('API_BASE_URL', 'https://api.example.com'),
+        'timeout': int(os.getenv('API_TIMEOUT', '30')),
+        'request_count': 0,
+        'initialized_at': datetime.now().isoformat()
+    }
+    
+    # Store state using SAM method
+    host_component.set_agent_specific_state("agent_state", agent_state)
+```
+
+### **🧪 Testing Strategy**
+
+#### **Dual Testing Approach**
+Each agent must implement **two types of tests**:
+
+**📡 API Tests (`test_<agent>_api.py`)**
+- **Purpose**: Test external APIs directly
+- **Scope**: API availability, rate limits, error handling
+- **No Mocking**: Tests actual API endpoints
+- **Validation**: Response formats, data structures, error codes
+
+**🔧 Tools Tests (`test_<agent>.py`)**
+- **Purpose**: Test agent logic and tools
+- **Scope**: Business logic, data processing, error handling
+- **Mocking**: External dependencies mocked
+- **Validation**: Function behavior, response formatting, edge cases
+
+#### **Test Implementation Pattern**
+```python
+import sys
+import os
+from unittest.mock import Mock, patch, AsyncMock
+
+# Add the parent directory to the path to import the tools
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+# Mock the SAM dependencies
+sys.modules['google.adk.tools'] = Mock()
+sys.modules['solace_ai_connector.common.log'] = Mock()
+
+# Import the tools module
+from agent_name.tools import function_name
+
+# Test with AsyncMock for async functions
+@patch('agent_name.tools.service_name')
+async def test_function(self, mock_service):
+    mock_service.method_name = AsyncMock(return_value=expected_response)
+    result = await function_name(params, self.context)
+    assert result["status"] == "success"
+```
+
+### **📚 Documentation Requirements**
+
+#### **Required Documentation Files**
+Each agent must have **two documentation files**:
+
+**📖 README.md (Quick Start & Overview)**
+- What the agent does
+- Example queries
+- Available tools table
+- Installation & setup
+- Test status
+- Use cases
+- Project structure
+- Development guidelines
+
+**📋 API_REFERENCE.md (Detailed Documentation)**
+- Detailed tool descriptions
+- Parameter specifications
+- Return value formats
+- Example JSON responses
+- Natural language query examples
+- Error handling
+- Configuration details
+
+### **🔑 Environment Variable Management**
+
+#### **Environment Loading Strategy**
+```python
+def load_environment_variables():
+    """Load environment variables from multiple possible locations"""
+    env_locations = [
+        os.path.join(os.getcwd(), '.env'),  # Current working directory
+        os.path.join(os.path.dirname(__file__), '.env'),  # Script directory
+        os.path.join(project_root, '.env'),  # Project root
+        '.env'  # Current directory (fallback)
+    ]
+    
+    for env_file in env_locations:
+        if os.path.exists(env_file):
+            load_dotenv(env_file)
+            break
+```
+
+#### **API Key Validation**
+```python
+def validate_api_key(api_key: str) -> bool:
+    """Validate API key format and requirements"""
+    if not api_key:
+        return False
+    if len(api_key) < 10:  # Minimum length check
+        return False
+    # Add format-specific validation as needed
+    return True
+```
+
+### **🚀 Deployment Best Practices**
+
+#### **Agent-Specific Requirements**
+Each agent must have its own `requirements.txt` file with minimal dependencies:
+
+```txt
+# src/agent_name/requirements.txt
+httpx>=0.24.0
+python-dateutil>=2.8.0
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+typing-extensions>=4.0.0
+```
+
+#### **Environment Template**
+Create `.env.sample` file for each agent:
+
+```bash
+# src/agent_name/.env.sample
+API_KEY_NAME=your_api_key_here
+API_BASE_URL=https://api.example.com
+API_TIMEOUT=30
+API_CACHE_DURATION=3600
+```
+
+### **🎯 Development Workflow**
+
+#### **Phase 1: Planning**
+- Complete all required components from the checklist
+- Identify external APIs and data sources
+- Plan tool functions and error handling
+- Design testing strategy
+- Plan dependency management
+
+#### **Phase 2: Implementation**
+- Create agent directory structure
+- Implement core tool functions with proper signatures
+- Add lifecycle management with state initialization
+- Create service layer (if needed)
+- Create agent-specific requirements.txt
+
+#### **Phase 3: Testing**
+- **API Tests**: Test external APIs directly
+- **Tools Tests**: Test agent logic with mocked dependencies
+- **Integration Tests**: Test agent in SAM environment
+- **Documentation**: Create README.md and API_REFERENCE.md
+
+#### **Phase 4: Deployment**
+- Run comprehensive test suite
+- Deploy using `deploy_agent.py`
+- Verify deployment with `verify_agent.py`
+- Test agent in SAM runtime
+
+#### **Phase 5: Maintenance**
+- Monitor agent performance
+- Update documentation as needed
+- Add new features following established patterns
+- Maintain test coverage
+
+### Agent Configuration Requirements
+- **Lifecycle Functions**: `initialize_<agent_name>` and `cleanup_<agent_name>`
+- **Tools**: Python functions with proper error handling
+- **Services**: Async HTTP clients with rate limiting and retry logic
+- **Configuration**: YAML with proper include syntax (`!include ../shared_config.yaml`)
+- **Agent Card**: Skills, discovery, and communication settings
+
+### Deployment Script Enhancements
+- **Auto-detection**: Automatically uses agent name as directory name when multiple agents exist
+- **Configuration Generation**: Dynamically creates agent card skills from tool definitions
+- **YAML Fixes**: Automatically corrects include syntax and adds missing sections
+- **Overwrite Protection**: Prompts before overwriting existing agents
+- **Robust Error Handling**: Fixed "already exists" warnings and file operation issues
+
+### API Integration Best Practices
+- **Rate Limiting**: Implement request spacing to avoid 429 errors
+- **Retry Logic**: Exponential backoff with proper error handling
+- **Session Management**: Reuse HTTP sessions for efficiency
+- **Error Handling**: Graceful degradation with informative error messages
+- **Logging**: Comprehensive logging for debugging and monitoring
+
+## 🧪 Enhanced Testing Strategy
+
+### Dual Testing Approach
+Each agent must implement **two types of tests**:
+
+#### 📡 API Tests (`test_<agent>_api.py`)
+- **Purpose**: Test external APIs directly
+- **Scope**: API availability, rate limits, error handling
+- **No Mocking**: Tests actual API endpoints
+- **Validation**: Response formats, data structures, error codes
+- **Examples**: 
+  - `test_country_information_api.py` → Tests REST Countries API + IP-API.com
+  - `test_news_snapshot_api.py` → Tests Google News RSS API
+  - `test_weather_api.py` → Tests Open-Meteo API
+  - `test_find_my_ip_api.py` → Tests IPify API + IP-API.com
+
+#### 🔧 Tools Tests (`test_<agent>.py`)
+- **Purpose**: Test agent logic and tools
+- **Scope**: Business logic, data processing, error handling
+- **Mocking**: External dependencies mocked
+- **Validation**: Function behavior, response formatting, edge cases
+- **Examples**:
+  - `test_country_agent.py` → Tests agent tools with mocked APIs
+  - `test_news_agent.py` → Tests agent tools with mocked RSS
+  - `test_weather_agent.py` → Tests agent tools with mocked weather APIs
+  - `test_find_my_ip_agent.py` → Tests agent tools with mocked IP APIs
+
+### Test Implementation Guidelines
+- **Mock SAM Dependencies**: Mock `google.adk.tools` and `solace_ai_connector.common.log`
+- **Test Real Logic**: Test actual agent functions, not just mocks
+- **Comprehensive Coverage**: Test success, error, and edge cases
+- **Statistics Tracking**: Test agent state management and metrics
+- **Import Handling**: Use proper `sys.path` adjustments for test imports
+
+### Test Results Summary
+| Agent | API Tests | Tools Tests | Overall Status |
+|-------|-----------|-------------|----------------|
+| 🌍 Country Information | ✅ Working | ✅ 13/13 Pass | ✅ **READY** |
+| 📰 News Snapshot | ✅ Working | ✅ 12/12 Pass | ✅ **READY** |
+| 🌤️ Weather Trend | ✅ Working | ✅ 10/10 Pass | ✅ **READY** |
+| 🌐 Find My IP | ✅ Working | ✅ 9/9 Pass | ✅ **READY** |
+
+## 📚 Documentation Structure
+
+### Required Documentation Files
+Each agent must have **two documentation files**:
+
+#### 📖 README.md (Quick Start & Overview)
+- **Purpose**: Getting started, overview, quick reference
+- **Content**: 
+  - What the agent does
+  - Example queries
+  - Available tools table
+  - Installation & setup
+  - Test status
+  - Use cases
+  - Project structure
+  - Development guidelines
+
+#### 📋 API_REFERENCE.md (Detailed Documentation)
+- **Purpose**: Comprehensive API documentation
+- **Content**:
+  - Detailed tool descriptions
+  - Parameter specifications
+  - Return value formats
+  - Example JSON responses
+  - Natural language query examples
+  - Error handling
+  - Configuration details
+
+### Project-Level Documentation
+- **`src/README.md`**: Overview of all agents with test results and deployment status
+- **Quick Navigation**: Links to individual agent documentation
+- **Test Results Summary**: Centralized test status across all agents
+- **Deployment Status**: Overall project readiness assessment
+
+## 🚀 Deployment Improvements
+
+### Enhanced deploy_agent.py
+- **Fixed "Already Exists" Issue**: Proper order of existence check and directory creation
+- **Robust File Operations**: Added `shutil.rmtree()` before `shutil.copytree()` for clean overwrites
+- **Better Error Handling**: Graceful handling of file operation failures
+- **User-Friendly Prompts**: Clear overwrite confirmation messages
+
+### Deployment Best Practices
+- **Test Before Deploy**: Always run both API and tools tests before deployment
+- **Documentation Check**: Ensure README.md and API_REFERENCE.md are complete
+- **Configuration Validation**: Verify YAML configuration syntax
+- **Import Path Testing**: Test agent imports in SAM environment
+
+## 🎯 Agent Development Workflow
+
+### 1. Planning Phase
+- Define agent purpose and capabilities
+- Identify external APIs and data sources
+- Plan tool functions and parameters
+- Design error handling strategy
+
+### 2. Implementation Phase
+- Create agent directory structure
+- Implement core tool functions
+- Add lifecycle management
+- Create service layer (if needed)
+
+### 3. Testing Phase
+- **API Tests**: Test external APIs directly
+- **Tools Tests**: Test agent logic with mocked dependencies
+- **Integration Tests**: Test agent in SAM environment
+- **Documentation**: Create README.md and API_REFERENCE.md
+
+### 4. Deployment Phase
+- Run comprehensive test suite
+- Deploy using `deploy_agent.py`
+- Verify deployment with `verify_agent.py`
+- Test agent in SAM runtime
+
+### 5. Maintenance Phase
+- Monitor agent performance
+- Update documentation as needed
+- Add new features following established patterns
+- Maintain test coverage
+
+## 🔧 Dependency Management
+
+### Individual Agent Requirements
+Each agent now has its own `requirements.txt` file with specific dependencies:
+
+#### 🌤️ Weather Trend Agent
+- `httpx>=0.24.0` - Async HTTP client for API calls
+- `aiohttp>=3.8.0` - Alternative HTTP client for service layer
+- `python-dateutil>=2.8.0` - Date parsing and manipulation
+- `pytest>=7.0.0` - Testing framework
+- `pytest-asyncio>=0.21.0` - Async testing support
+- `typing-extensions>=4.0.0` - Type hints support
+
+#### 🌐 Find My IP Agent
+- `httpx>=0.24.0` - Async HTTP client for API calls
+- `python-dateutil>=2.8.0` - Date parsing utilities
+- `pytest>=7.0.0` - Testing framework
+- `pytest-asyncio>=0.21.0` - Async testing support
+- `typing-extensions>=4.0.0` - Type hints support
+
+#### 🌍 Country Information Agent
+- `aiohttp>=3.8.0` - Async HTTP client for API calls
+- `python-dateutil>=2.8.0` - Date parsing utilities
+- `pytest>=7.0.0` - Testing framework
+- `pytest-asyncio>=0.21.0` - Async testing support
+- `typing-extensions>=4.0.0` - Type hints support
+
+#### 📰 News Snapshot Agent
+- `httpx>=0.24.0` - Async HTTP client for RSS feed retrieval
+- `python-dateutil>=2.8.0` - Date parsing utilities
+- `pytest>=7.0.0` - Testing framework
+- `pytest-asyncio>=0.21.0` - Async testing support
+- `typing-extensions>=4.0.0` - Type hints support
+
+### Common Dependencies
+All agents inherit these common dependencies from the parent project:
+- `google.adk.tools` - SAM framework tools
+- `solace_ai_connector` - SAM connector framework
+
+### Installation Strategy
+```bash
+# Install base dependencies
+pip install -r requirements.txt
+
+# Install agent-specific dependencies (automated during deployment)
+python deploy_agent.py /path/to/sam agent_name
+
+# Or install manually (if needed)
+cd src/weather_trend_agent && pip install -r requirements.txt && cd ../..
+cd src/find_my_ip_agent && pip install -r requirements.txt && cd ../..
+cd src/country_information_agent && pip install -r requirements.txt && cd ../..
+cd src/news_snapshot_agent && pip install -r requirements.txt && cd ../..
+```
+
+### Deployment Improvements
+- **Automatic Dependency Installation**: Dependencies are automatically installed during deployment
+- **Agent-Specific Requirements**: Each agent uses its own minimal requirements.txt file
+- **Clean Deployment**: Tests, cache files, and development files are automatically excluded
+- **Conflict Resolution**: Dependency conflicts are automatically resolved
+- **Environment Variable Support**: Proper loading of environment variables from .env files
+
+## 🧪 Testing Improvements
+
+### Fixed Import Issues
+- **Proper Import Structure**: Use `sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))` for test imports
+- **Mock SAM Dependencies**: Mock `google.adk.tools` and `solace_ai_connector.common.log` before imports
+- **AsyncMock for Async Functions**: Use `AsyncMock` for mocking async service methods
+- **Real Function Testing**: Test actual agent functions with proper mocking
+
+### Test Structure Pattern
+```python
+import sys
+import os
+from unittest.mock import Mock, patch, AsyncMock
+
+# Add the parent directory to the path to import the tools
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+# Mock the SAM dependencies
+sys.modules['google.adk.tools'] = Mock()
+sys.modules['solace_ai_connector.common.log'] = Mock()
+
+# Import the tools module
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from agent_name.tools import function_name
+
+# Test with AsyncMock for async functions
+@patch('agent_name.tools.service_name')
+async def test_function(self, mock_service):
+    mock_service.method_name = AsyncMock(return_value=expected_response)
+    result = await function_name(params, self.context)
+    assert result["status"] == "success"
+```
+
+### Test Coverage Achieved
+- **Weather Trend Agent**: 10/10 tests passing ✅
+- **Find My IP Agent**: 9/9 tests passing ✅
+- **Country Information Agent**: 13/13 tests passing ✅
+- **News Snapshot Agent**: 12/12 tests passing ✅
+- **Exchange Rate Lookup Agent**: 38/38 tests passing ✅ (including environment variable tests)
+
+### Environment Variable Testing
+- **Environment Loading Tests**: Verify proper loading of environment variables
+- **API Key Validation**: Test API key loading and validation
+- **Configuration Tests**: Test agent configuration from environment variables
+- **Integration Tests**: Test all services use environment variables correctly
+
+## 📝 Development Guidelines
+
+### Code Quality Standards
+1. **Test Structure**: Always include both API and tools tests
+2. **Error Handling**: Comprehensive error handling in all functions
+3. **Documentation**: Both README.md and API_REFERENCE.md required
+4. **Configuration**: YAML configuration following SAM patterns
+5. **Logging**: Proper logging with agent-specific identifiers
+6. **Import Management**: Proper handling of relative and absolute imports
+
+### Naming Conventions
+- **Agent Names**: Use underscores (`country_information_agent`)
+- **Test Files**: Follow pattern `test_<agent>_api.py` and `test_<agent>.py`
+- **Functions**: Use descriptive names with proper error handling
+- **Configuration**: Use hyphens in YAML (`agent-name`)
+
+### Error Handling Patterns
+- **Service Layer**: Centralized error handling in service classes
+- **Tool Layer**: Consistent error response format
+- **Lifecycle**: Proper initialization and cleanup error handling
+- **User Feedback**: Clear error messages with actionable information
+
+### Performance Considerations
+- **Async Operations**: Use async/await for I/O operations
+- **Connection Pooling**: Reuse HTTP sessions and connections
+- **Caching**: Implement appropriate caching strategies
+- **Resource Management**: Proper cleanup of resources and connections
+
+### Deployment Best Practices
+- **Agent-Specific Requirements**: Create minimal requirements.txt files for each agent
+- **Environment Variables**: Use .env files for configuration and API keys
+- **Clean Deployment**: Tests and development files are automatically excluded
+- **Dependency Management**: Avoid conflicts by using agent-specific requirements
+- **Automated Installation**: Dependencies are automatically installed during deployment
+
+### Security Best Practices
+- **API Keys**: Store sensitive data in environment variables
+- **Input Validation**: Validate all user inputs and API responses
+- **Error Messages**: Avoid exposing sensitive information in error messages
+- **Rate Limiting**: Respect API rate limits and implement backoff strategies
+
+---
+
+*This document serves as the comprehensive guide for Solace Agent Mesh development, incorporating all improvements and best practices established through hands-on development experience.*

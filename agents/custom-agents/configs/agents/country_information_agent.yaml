@@ -1,0 +1,150 @@
+# Country Information Agent Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: DEBUG
+  log_file: country_information_agent.log
+
+# Include shared configuration
+!include ../shared_config.yaml
+
+apps:
+  - name: country_information_agent
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE}
+      agent_name: "CountryInformationAgent"
+      display_name: "Country Information Agent"
+      supports_streaming: true
+      
+      # LLM model configuration
+      model: *general_model
+      
+      # Agent instructions
+      instruction: |
+        You are a professional country information agent that provides comprehensive country data using the REST Countries API.
+        
+        Your capabilities include:
+        1. Getting detailed information about any country in the world
+        2. Searching countries by name, code, or partial matches
+        3. Retrieving country borders and neighboring countries
+        4. Comparing multiple countries side by side
+        5. Getting comprehensive country data including geography, demographics, currencies, languages, borders, flags, and economic information
+        6. Providing country flags and geographic coordinates
+        7. Supporting all 195+ countries with up-to-date information
+        
+        Guidelines:
+        - Always provide clear, accurate country information
+        - Include comprehensive details when requested (population, capital, currencies, languages, etc.)
+        - Present data in an organized, easy-to-understand format
+        - Handle both country names and ISO codes
+        - Provide suggestions for similar countries when exact matches aren't found
+        - Include flag images and geographic coordinates when relevant
+        - Present comparisons in a structured, tabular format
+        - Handle edge cases gracefully (disputed territories, multiple names)
+        - Provide context about the data source (REST Countries API)
+        
+        When users ask about countries, use the appropriate tools to fetch real-time data from the REST Countries API.
+        Present information in a clear, organized manner that's easy to understand.
+        
+        Example responses:
+        - "France is a country in Western Europe with capital Paris, population 67.4 million, uses Euro currency, and borders 8 countries including Germany, Italy, and Spain."
+        - "Germany borders 9 countries: Denmark, Poland, Czech Republic, Austria, Switzerland, France, Luxembourg, Belgium, and Netherlands."
+        - "Countries with 'united' in the name: United States, United Kingdom, United Arab Emirates, United Republic of Tanzania."
+        - "Comparison of USA, China, and India: [structured comparison table]"
+        - "I found 195 countries in the database. Here are the top 10 by population: [list]"
+      
+      # Lifecycle functions
+      agent_init_function:
+        module: "src.country_information_agent.lifecycle"
+        name: "initialize_country_information_agent"
+        base_path: .
+      
+      agent_cleanup_function:
+        module: "src.country_information_agent.lifecycle"
+        name: "cleanup_country_information_agent"
+        base_path: .
+      
+      # Tools configuration
+      tools:
+        # Get country information tool
+        - tool_type: python
+          component_module: "src.country_information_agent.tools"
+          component_base_path: .
+          function_name: "get_country_info"
+          tool_description: "Get comprehensive information about a specific country"
+        
+        # Search countries tool
+        - tool_type: python
+          component_module: "src.country_information_agent.tools"
+          component_base_path: .
+          function_name: "search_countries"
+          tool_description: "Search for countries by name or partial match"
+        
+        # Get country borders tool
+        - tool_type: python
+          component_module: "src.country_information_agent.tools"
+          component_base_path: .
+          function_name: "get_country_borders"
+          tool_description: "Get border information and neighboring countries"
+        
+        # Compare countries tool
+        - tool_type: python
+          component_module: "src.country_information_agent.tools"
+          component_base_path: .
+          function_name: "get_country_comparison"
+          tool_description: "Compare multiple countries side by side"
+        
+        # Get all countries tool
+        - tool_type: python
+          component_module: "src.country_information_agent.tools"
+          component_base_path: .
+          function_name: "get_all_countries"
+          tool_description: "Get list of all countries with basic information"
+        
+        # Built-in artifact tools for file operations
+        - tool_type: builtin-group
+          group_name: "artifact_management"
+    
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+
+      artifact_handling_mode: "reference"
+      enable_embed_resolution: true
+      enable_artifact_content_instruction: true
+      
+      # Agent card
+      agent_card:
+        description: "Expert in global geography and country information, providing comprehensive data about all 195+ countries including demographics, currencies, languages, borders, and flags"
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text", "file"]
+        skills:
+          - id: "get_country_info"
+            name: "Get Country Information"
+            description: "Retrieve comprehensive information about any country including population, capital, currencies, languages, and borders"
+          - id: "search_countries"
+            name: "Search Countries"
+            description: "Search for countries by name, code, or partial match with fuzzy matching"
+          - id: "get_country_borders"
+            name: "Get Country Borders"
+            description: "Get border information and detailed data about neighboring countries"
+          - id: "get_country_comparison"
+            name: "Compare Countries"
+            description: "Compare multiple countries side by side with structured data"
+          - id: "get_all_countries"
+            name: "Get All Countries"
+            description: "Retrieve list of all countries with basic information and statistics"
+      
+      # Discovery & Communication
+      agent_card_publishing: 
+        interval_seconds: 10
+      agent_discovery: 
+        enabled: true
+
+      inter_agent_communication:
+        allow_list: ["*"] 
+        deny_list: [] 
+        request_timeout_seconds: 600

@@ -1,0 +1,107 @@
+# Weather Trend Agent Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: DEBUG
+  log_file: weather_trend_agent.log
+
+# Include shared configuration
+shared_config: !include ../shared_config.yaml
+
+apps:
+  - name: weather_trend_agent
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE}
+      agent_name: "WeatherTrendAgent"
+      display_name: "Weather Trend Agent"
+      supports_streaming: true
+      
+      # LLM model configuration
+      model: *general_model
+      
+      # Agent instructions
+      instruction: |
+        You are a professional weather trend agent that provides comprehensive historical weather data using Open-Meteo API.
+        
+        Your capabilities include:
+        1. Geocoding locations to get coordinates
+        2. Getting historical weather data by coordinates or location name
+        3. Providing weather summaries for specific dates
+        4. Getting weather forecasts
+        5. Supporting multiple weather variables (temperature, precipitation, wind, humidity, etc.)
+        
+        Guidelines:
+        - Always provide clear, accurate weather information
+        - Include location details and time periods
+        - Present data in an organized, easy-to-understand format
+        - Handle both coordinate-based and location-name-based requests
+        - Provide context about the data source (Open-Meteo API)
+        - Include relevant weather variables based on user requests
+        - Handle date ranges and single dates appropriately
+        
+        When users ask about weather history, use the appropriate tools to fetch real-time data from Open-Meteo.
+        Present information in a clear, organized manner that's easy to understand.
+        
+        Example responses:
+        - "Historical weather data for London from 2024-01-01 to 2024-01-07 shows average temperatures ranging from 5°C to 12°C with 15mm of total precipitation."
+        - "Weather summary for New York on 2024-01-15: High 8°C, Low -2°C, Total precipitation 5mm, Max wind speed 25 km/h."
+        - "Available weather variables include temperature_2m, precipitation, relativehumidity_2m, windspeed_10m, and many more."
+      
+      # Lifecycle functions
+      agent_init_function:
+        module: "src.weather_trend_agent.lifecycle"
+        name: "initialize_weather_trend_agent"
+        base_path: .
+      
+      agent_cleanup_function:
+        module: "src.weather_trend_agent.lifecycle"
+        name: "cleanup_weather_trend_agent"
+        base_path: .
+      
+      # Tools configuration
+      tools:
+        # Geocoding tool
+        - tool_type: python
+          component_module: "src.weather_trend_agent.tools"
+          component_base_path: .
+          function_name: "geocode_location"
+          tool_description: "Geocode a location name to get coordinates"
+        
+        # Historical weather by coordinates
+        - tool_type: python
+          component_module: "src.weather_trend_agent.tools"
+          component_base_path: .
+          function_name: "get_historical_weather_by_coordinates"
+          tool_description: "Get historical weather data for a location using coordinates"
+        
+        # Historical weather by location name
+        - tool_type: python
+          component_module: "src.weather_trend_agent.tools"
+          component_base_path: .
+          function_name: "get_historical_weather_by_location"
+          tool_description: "Get historical weather data for a location by name"
+        
+        # Weather summary by date
+        - tool_type: python
+          component_module: "src.weather_trend_agent.tools"
+          component_base_path: .
+          function_name: "get_weather_summary_by_date"
+          tool_description: "Get weather summary for a specific date"
+        
+        # Forecast weather
+        - tool_type: python
+          component_module: "src.weather_trend_agent.tools"
+          component_base_path: .
+          function_name: "get_forecast_weather"
+          tool_description: "Get weather forecast for a location"
+        
+        # Available weather variables
+        - tool_type: python
+          component_module: "src.weather_trend_agent.tools"
+          component_base_path: .
+          function_name: "get_available_weather_variables"
+          tool_description: "Get list of available weather variables for Open-Meteo API"

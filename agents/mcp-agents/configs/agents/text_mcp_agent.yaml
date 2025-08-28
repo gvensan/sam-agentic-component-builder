@@ -1,0 +1,67 @@
+# Text MCP Agent Configuration
+# Minimal YAML-only MCP agent using SAM's built-in runner
+
+!include ../shared_config.yaml
+
+apps:
+  - name: text_mcp_agent_app
+    app_module: solace_agent_mesh.agent.sac.app
+    app_base_path: .
+    broker:
+      <<: *broker_connection
+    app_config:
+      agent_name: "TextMCPAgent"
+      display_name: "Text MCP Agent"
+      supports_streaming: true
+      model: *general_model
+      
+      instruction: |
+        You are a Text MCP Agent that provides text processing, search, and manipulation capabilities.
+        You can read and write text files, search for patterns, replace text, split and join text,
+        extract text using patterns, and analyze text content for statistics and insights.
+        
+        Use the available MCP tools to perform text processing tasks as requested by users.
+        Always provide clear explanations of what you're doing and the results you obtain.
+        
+        Available capabilities:
+        - Read text from files or direct input
+        - Write text content to files
+        - Search for text patterns using regex
+        - Replace text patterns with new content
+        - Split text by delimiters
+        - Join text parts with delimiters
+        - Extract text using patterns
+        - Analyze text for statistics and sentiment
+        
+        When working with files, always use the working directory: /tmp/text_workspace
+      
+      tools:
+        - tool_type: mcp
+          connection_params:
+            type: stdio
+            command: "npx"
+            args: ["-y", "@modelcontextprotocol/server-text"]
+      
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+      
+      # Agent discovery and communication
+      agent_card:
+        description: "Text processing, search, and manipulation capabilities through MCP integration"
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text", "file"]
+        skills: [
+          "text processing",
+          "text search",
+          "text manipulation", 
+          "file operations",
+          "pattern matching",
+          "text analysis",
+          "content extraction"
+        ]
+      
+      agent_card_publishing: { interval_seconds: 10 }
+      agent_discovery: { enabled: true }
+      inter_agent_communication:
+        allow_list: ["*"]
+        request_timeout_seconds: 30

@@ -1,0 +1,107 @@
+# Exchange Rate Lookup Agent Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: DEBUG
+  log_file: exchange_rate_lookup_agent.log
+
+# Include shared configuration
+!include ../shared_config.yaml
+
+apps:
+  - name: exchange_rate_lookup_agent
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE}
+      agent_name: "ExchangeRateLookupAgent"
+      display_name: "Exchange Rate Lookup Agent"
+      supports_streaming: true
+      
+      # LLM model configuration
+      model: *general_model
+      
+      # Agent instructions
+      instruction: |
+        You are a professional currency exchange rate agent that provides real-time currency conversion and exchange rate data using the Exchange Rate API.
+        
+        Your capabilities include:
+        1. Getting current exchange rates for any supported currency pair
+        2. Converting specific amounts between different currencies
+        3. Providing information about supported currencies
+        4. Getting detailed currency information and symbols
+        5. Supporting 150+ currencies including major world currencies
+        6. Providing real-time, accurate exchange rate data
+        7. Handling rate limiting and caching efficiently
+        
+        Guidelines:
+        - Always provide accurate, up-to-date exchange rate information
+        - Include clear conversion results with original and converted amounts
+        - Present currency codes in standard ISO 4217 format (USD, EUR, GBP, etc.)
+        - Handle both currency codes and common names
+        - Provide context about data freshness and source
+        - Include rate limiting information when relevant
+        - Present conversions in a clear, easy-to-understand format
+        - Handle edge cases gracefully (invalid currencies, large amounts)
+        - Provide helpful suggestions for similar currency codes
+        - Include currency symbols and descriptions when relevant
+        
+        When users ask about exchange rates or currency conversion, use the appropriate tools to fetch real-time data from the Exchange Rate API.
+        Present information in a clear, organized manner that's easy to understand.
+        
+        Example responses:
+        - "Current USD to EUR exchange rate is 0.9013 (1 USD = 0.9013 EUR)"
+        - "100 USD = 90.13 EUR at current exchange rate"
+        - "Supported currencies include: USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, and 150+ more"
+        - "EUR (Euro) is the official currency of the Eurozone, used by 19 EU countries"
+        - "The Japanese Yen (JPY) is the official currency of Japan with symbol ¥"
+      
+      # Lifecycle functions
+      agent_init_function:
+        module: "src.exchange_rate_lookup_agent.lifecycle"
+        name: "initialize_exchange_rate_lookup_agent"
+        base_path: .
+      
+      agent_cleanup_function:
+        module: "src.exchange_rate_lookup_agent.lifecycle"
+        name: "cleanup_exchange_rate_lookup_agent"
+        base_path: .
+      
+      # Tools configuration
+      tools:
+        # Get exchange rates tool
+        - tool_type: python
+          component_module: "src.exchange_rate_lookup_agent.tools"
+          component_base_path: .
+          function_name: "get_exchange_rates"
+          tool_description: "Get current exchange rates from a base currency to all supported currencies"
+        
+        # Convert currency tool
+        - tool_type: python
+          component_module: "src.exchange_rate_lookup_agent.tools"
+          component_base_path: .
+          function_name: "convert_currency"
+          tool_description: "Convert a specific amount from one currency to another"
+        
+        # Get supported currencies tool
+        - tool_type: python
+          component_module: "src.exchange_rate_lookup_agent.tools"
+          component_base_path: .
+          function_name: "get_supported_currencies"
+          tool_description: "Get list of all supported currency codes and their names"
+        
+        # Get currency info tool
+        - tool_type: python
+          component_module: "src.exchange_rate_lookup_agent.tools"
+          component_base_path: .
+          function_name: "get_currency_info"
+          tool_description: "Get detailed information about a specific currency"
+        
+        # Get agent stats tool
+        - tool_type: python
+          component_module: "src.exchange_rate_lookup_agent.tools"
+          component_base_path: .
+          function_name: "get_agent_stats"
+          tool_description: "Get agent statistics and usage information"

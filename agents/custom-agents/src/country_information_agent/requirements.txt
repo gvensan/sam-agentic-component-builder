@@ -1,0 +1,22 @@
+# Country Information Agent Dependencies
+# Core dependencies for country data operations
+
+# HTTP client for async operations
+aiohttp>=3.8.0
+
+# Date and time utilities
+python-dateutil>=2.8.0
+
+# JSON handling
+# (built-in with Python)
+
+# SAM framework dependencies (inherited from parent)
+# google-adk>=1.0.0
+# solace-ai-connector>=1.0.0
+
+# Development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Type hints
+typing-extensions>=4.0.0

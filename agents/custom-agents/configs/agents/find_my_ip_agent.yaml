@@ -1,0 +1,151 @@
+# Find My IP Agent Configuration
+log:
+  stdout_log_level: INFO
+  log_file_level: DEBUG
+  log_file: find_my_ip_agent.log
+
+# Include shared configuration
+!include ../shared_config.yaml
+
+apps:
+  - name: find_my_ip_agent
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE}
+      agent_name: "FindMyIPAgent"
+      display_name: "Find My IP Agent"
+      supports_streaming: true
+      
+      # LLM model configuration
+      model: *general_model
+      
+      # Agent instructions
+      instruction: |
+        You are a professional IP address agent that provides accurate, up-to-date IP information.
+        
+        Your capabilities include:
+        1. Getting current IP address from IPify API
+        2. Providing IP information with timestamps and source details
+        3. Getting location information for IP addresses
+        4. Handling errors gracefully with helpful messages
+        
+        Guidelines:
+        - Always provide the IP address clearly and prominently
+        - Include timestamp information for data freshness
+        - Mention the source of the IP information (IPify API)
+        - Handle errors gracefully with helpful error messages
+        - Offer location information when relevant
+        - Be helpful in explaining what the IP address represents
+        
+        When users ask about their IP address or location, use the appropriate tools to fetch real-time data.
+        Present information in a clear, organized manner that's easy to understand.
+        
+        Example responses:
+        - "Your current IP address is 192.168.1.1 (retrieved from IPify API at 2024-01-01T12:00:00Z)"
+        - "I found your IP address: 203.0.113.1. This IP is located in New York, NY, United States."
+      
+      # Lifecycle functions
+      agent_init_function:
+        module: "src.find_my_ip_agent.lifecycle"
+        name: "initialize_find_my_ip_agent"
+        base_path: .
+      
+      agent_cleanup_function:
+        module: "src.find_my_ip_agent.lifecycle"
+        name: "cleanup_find_my_ip_agent"
+        base_path: .
+      
+      # Tools configuration
+      tools:
+        # Current IP tool
+        - tool_type: python
+          component_module: "src.find_my_ip_agent.tools"
+          component_base_path: .
+          function_name: "get_current_ip"
+          tool_description: "Get current IP address from IPify API"
+        
+        # IP with retry tool
+        - tool_type: python
+          component_module: "src.find_my_ip_agent.tools"
+          component_base_path: .
+          function_name: "get_ip_with_retry"
+          tool_description: "Get current IP address with retry logic for improved reliability"
+        
+        # IP with location tool
+        - tool_type: python
+          component_module: "src.find_my_ip_agent.tools"
+          component_base_path: .
+          function_name: "get_ip_info"
+          tool_description: "Get current IP address with optional location information"
+        
+        # IP location tool
+        - tool_type: python
+          component_module: "src.find_my_ip_agent.tools"
+          component_base_path: .
+          function_name: "get_ip_location"
+          tool_description: "Get location information for a specific IP address using multiple APIs"
+        
+        # IP comprehensive info tool
+        - tool_type: python
+          component_module: "src.find_my_ip_agent.tools"
+          component_base_path: .
+          function_name: "get_ip_comprehensive_info"
+          tool_description: "Get comprehensive IP information including location, security, and connection data"
+        
+        # IP security info tool
+        - tool_type: python
+          component_module: "src.find_my_ip_agent.tools"
+          component_base_path: .
+          function_name: "get_ip_security_info"
+          tool_description: "Get security and connection information for an IP address"
+        
+        # Built-in artifact tools for file operations
+        - tool_type: builtin-group
+          group_name: "artifact_management"
+    
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+
+      artifact_handling_mode: "reference"
+      enable_embed_resolution: true
+      enable_artifact_content_instruction: true
+      
+      # Agent card
+      agent_card:
+        description: "Professional IP address agent providing comprehensive IP information using multiple APIs"
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text", "file"]
+        skills:
+          - id: "get_current_ip"
+            name: "Get Current IP"
+            description: "Retrieve current IP address from IPify API"
+          - id: "get_ip_with_retry"
+            name: "Get IP with Retry"
+            description: "Get IP address with retry logic for reliability"
+          - id: "get_ip_info"
+            name: "Get IP with Location"
+            description: "Get IP address with optional location information"
+          - id: "get_ip_location"
+            name: "Get IP Location"
+            description: "Get location information for any IP address using multiple APIs"
+          - id: "get_ip_comprehensive_info"
+            name: "Get Comprehensive IP Info"
+            description: "Get detailed IP information including location, security, and connection data"
+          - id: "get_ip_security_info"
+            name: "Get IP Security Info"
+            description: "Get security and connection information for an IP address"
+      
+      # Discovery & Communication
+      agent_card_publishing: 
+        interval_seconds: 10
+      agent_discovery: 
+        enabled: true
+
+      inter_agent_communication:
+        allow_list: ["*"] 
+        deny_list: [] 
+        request_timeout_seconds: 600

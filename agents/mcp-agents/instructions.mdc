@@ -1,0 +1,752 @@
+# Instructions for Solace Agent Mesh MCP Agent Development
+
+## Project Overview
+This workspace is dedicated to building **MCP (Model Context Protocol) agents** for **Solace Agent Mesh (SAM)** - an open-source framework that provides native MCP support through the framework itself, enabling seamless integration of external MCP servers into the A2A protocol ecosystem.
+
+## Context & Background
+- **Primary Goal**: Learn SAM MCP integration and build various types of MCP-enabled agents
+- **Framework Focus**: Native MCP support without additional plugins required
+- **Integration Points**: MCP servers + Google ADK + Solace AI Connector + Solace PubSub+ Event Broker
+- **Documentation Base**: https://solacelabs.github.io/solace-agent-mesh/docs/documentation/tutorials/mcp-integration
+
+## **📁 Agent-Specific Prompt Organization**
+
+### **Agent Builder Prompts Location**
+Agent-specific builder prompts should be stored in the root of the `mcp-agents` directory with the naming convention:
+```
+agents/mcp-agents/
+├── instructions.mdc                           # Framework guidelines
+├── custom-mcp-builder-prompt-sample.md        # Generic template
+├── <agent_name>-mcp-agent-builder-prompt.md   # Agent-specific prompts
+└── configs/agents/
+    └── <agent_name>_mcp_agent.yaml            # YAML-only agent configuration
+```
+
+### **YAML-Only MCP Agents**
+**Key Insight**: For basic MCP integration in SAM, **only YAML configuration is required** - no custom source code needed!
+
+- **SAM built-in runner** handles MCP handshake automatically
+- **No custom Python code** required for basic MCP integration
+- **Custom code only needed** for post-processing/validation or mixing MCP + Python tools
+
+### **Creating Agent-Specific Prompts**
+1. **Copy the template**: Use `custom-mcp-builder-prompt-sample.md` as a base
+2. **Name the file**: Use `<agent_name>-mcp-agent-builder-prompt.md` format
+3. **Fill in requirements**: Complete all required sections with agent-specific details
+4. **Store in root**: Keep prompts in the root directory for easy access
+5. **Reference in implementation**: Use the prompt as specification for building the agent
+
+### **Example Agent Structure**
+```
+agents/mcp-agents/
+├── text-mcp-agent-builder-prompt.md           # Text MCP Agent prompt
+├── filesystem-mcp-agent-builder-prompt.md     # Filesystem MCP Agent prompt
+├── system-mcp-agent-builder-prompt.md         # System MCP Agent prompt
+└── configs/agents/
+    ├── text_mcp_agent.yaml                    # Text MCP Agent YAML config
+    ├── filesystem_mcp_agent.yaml              # Filesystem MCP Agent YAML config
+    └── system_mcp_agent.yaml                  # System MCP Agent YAML config
+```
+
+### **Minimal YAML-Only Example**
+```yaml
+# configs/agents/filesystem_agent.yaml
+!include ../shared_config.yaml
+
+apps:
+  - name: filesystem_mcp_agent_app
+    app_module: solace_agent_mesh.agent.sac.app   # built-in runner
+    app_base_path: .
+    broker: { <<: *broker_connection }
+    app_config:
+      agent_name: "FileSystemAgent"
+      supports_streaming: true
+      model: *general_model
+      tools:
+        - tool_type: mcp
+          connection_params:
+            type: stdio
+            command: "npx"
+            args: ["-y","@modelcontextprotocol/server-filesystem","/tmp/samv2"]
+      agent_card: { description: "MCP filesystem agent" }
+```
+
+## MCP Integration Fundamentals
+
+### What is MCP?
+**Model Context Protocol (MCP)** is a standard protocol that allows AI agents to connect to external tools, resources, and data sources. SAM provides **native MCP support** through the framework itself, enabling agents to:
+
+- Connect to external MCP servers seamlessly
+- Use MCP tools, resources, and prompts within the A2A protocol ecosystem
+- Integrate with filesystems, databases, APIs, and other external systems
+- Extend agent capabilities without custom development
+
+### MCP Connection Types
+
+#### 1. **Stdio Connection (Local MCP Servers)**
+Most common method for connecting to MCP servers that run as local processes:
+```yaml
+tools:
+  - tool_type: mcp
+    connection_params:
+      type: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "@modelcontextprotocol/server-filesystem"
+        - "/tmp/samv2"
+```
+
+#### 2. **SSE Connection (Remote MCP Servers)**
+For connecting to remote MCP servers using Server-Sent Events:
+```yaml
+tools:
+  - tool_type: mcp
+    connection_params:
+      type: sse
+      url: "https://mcp.example.com/v1/sse"
+      headers:
+        Authorization: "Bearer ${MCP_AUTH_TOKEN}"
+```
+
+#### 3. **Docker Connection (Containerized MCP Servers)**
+For running MCP servers in Docker containers:
+```yaml
+tools:
+  - tool_type: mcp
+    connection_params:
+      type: stdio
+      command: "docker"
+      args:
+        - "run"
+        - "-i"
+        - "--rm"
+        - "-e"
+        - "API_KEY"
+        - "mcp-server-image:latest"
+    environment_variables:
+      API_KEY: ${MY_API_KEY}
+```
+
+## MCP Agent Development Guidelines
+
+### **📋 MCP Agent Development Checklist**
+
+#### **🔴 REQUIRED COMPONENTS (Must Complete)**
+
+**Agent Identity**
+- [ ] **Agent Name**: Internal name (e.g., "filesystem_mcp_agent", "database_mcp_agent")
+- [ ] **Display Name**: Human-readable name (e.g., "File System MCP Agent", "Database MCP Agent")
+- [ ] **Description**: Brief description of what the MCP agent does (1-2 sentences)
+- [ ] **Version**: Version number (e.g., "1.0.0")
+
+**MCP Server Details**
+- [ ] **MCP Server**: Which MCP server to integrate with
+- [ ] **Connection Type**: Stdio, SSE, or Docker connection
+- [ ] **Server Command**: Command to run the MCP server
+- [ ] **Server Arguments**: Arguments needed for the MCP server
+- [ ] **Authentication**: How to authenticate with the MCP server (if required)
+- [ ] **Environment Variables**: Required environment variables for the MCP server
+
+**Tool Configuration**
+- [ ] **Available Tools**: List of tools provided by the MCP server
+- [ ] **Tool Filtering**: Which specific tools to expose (if not all)
+- [ ] **Tool Documentation**: Purpose and usage of each tool
+- [ ] **Tool Parameters**: Input parameters and return values for each tool
+
+**Integration Requirements**
+- [ ] **Agent Instructions**: Instructions for the agent on how to use MCP tools
+- [ ] **Error Handling**: How to handle MCP server failures
+- [ ] **Resource Management**: How to manage MCP server resources
+- [ ] **Security**: Security considerations for the MCP integration
+
+**Testing Requirements**
+- [ ] **MCP Server Tests**: Test MCP server connectivity and functionality
+- [ ] **Tool Tests**: Test individual MCP tools
+- [ ] **Integration Tests**: Test agent with MCP tools
+- [ ] **Error Tests**: Test error handling and recovery
+
+**Documentation Requirements**
+- [ ] **README Content**: Quick start guide and MCP server setup
+- [ ] **API Reference Content**: Detailed MCP tool documentation
+- [ ] **Examples**: Usage examples with MCP tools
+- [ ] **Troubleshooting**: Common issues and solutions
+
+#### **🟡 OPTIONAL COMPONENTS (Complete as Needed)**
+
+**Advanced Features**
+- [ ] **Tool Filtering**: Limit which MCP tools are available
+- [ ] **Custom Wrappers**: Custom Python wrappers around MCP tools
+- [ ] **Resource Management**: Advanced resource management strategies
+- [ ] **Monitoring**: MCP server health monitoring
+- [ ] **Fallback Strategies**: Fallback mechanisms when MCP server is unavailable
+
+**Security & Privacy**
+- [ ] **Authentication**: Advanced authentication mechanisms
+- [ ] **Authorization**: Fine-grained access control
+- [ ] **Data Privacy**: How to handle sensitive data
+- [ ] **Audit Logging**: Logging of MCP tool usage
+
+### **📁 YAML-Only MCP Agent Structure**
+
+#### **Minimal Directory Structure**
+For YAML-only MCP agents, only the following structure is needed:
+
+```bash
+# Create only the necessary directories
+mkdir -p configs/agents/
+```
+
+#### **Complete Directory Structure**
+```
+agents/mcp-agents/
+├── instructions.mdc                           # Framework guidelines
+├── custom-mcp-builder-prompt-sample.md        # Generic template
+├── <agent_name>-mcp-agent-builder-prompt.md   # Agent-specific prompts
+├── configs/
+│   ├── shared_config.yaml                     # Shared configuration
+│   └── agents/
+│       └── <mcp_agent_name>.yaml              # YAML-only agent configuration
+└── README.md                                  # Documentation
+```
+
+#### **File Creation Commands**
+```bash
+# Create only the necessary files
+touch configs/agents/<mcp_agent_name>.yaml
+```
+
+#### **YAML-Only Guidelines**
+- **`configs/agents/`**: Contains only YAML configuration files
+- **No custom Python code**: SAM built-in runner handles everything
+- **No API_REFERENCE.md**: MCP tools are automatically exposed by SAM
+- **No server_config/tools_config**: MCP server configuration is in the YAML
+- **No tests directory**: Test the MCP server independently
+- **No lifecycle/tools files**: SAM handles all lifecycle management
+
+### **🔧 MCP Agent Configuration**
+
+#### **Basic MCP Agent YAML Configuration**
+```yaml
+# configs/agents/mcp_agent.yaml
+log:
+  stdout_log_level: INFO
+  log_file_level: DEBUG
+  log_file: mcp_agent.log
+
+!include ../shared_config.yaml
+
+apps:
+  - name: mcp_agent_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE}
+      supports_streaming: true
+      agent_name: "MCPAgent"
+      display_name: "MCP Agent"
+      model: *general_model
+      
+      instruction: |
+        You can interact with external systems using MCP tools.
+        Use the available MCP tools to perform tasks as requested.
+
+      tools:
+        - tool_type: mcp
+          connection_params:
+            type: stdio
+            command: "mcp-server-command"
+            args:
+              - "arg1"
+              - "arg2"
+        - tool_type: builtin-group
+          group_name: "artifact_management"
+
+      session_service: *default_session_service
+      artifact_service: *default_artifact_service
+
+      # Agent discovery and communication
+      agent_card:
+        description: "An agent that integrates with external systems via MCP."
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text", "file"]
+        skills: []
+
+      agent_card_publishing: { interval_seconds: 10 }
+      agent_discovery: { enabled: true }
+      inter_agent_communication:
+        allow_list: ["*"]
+        request_timeout_seconds: 30
+```
+
+#### **Tool-Specific Configuration**
+Limit which tools from an MCP server are available:
+```yaml
+tools:
+  - tool_type: mcp
+    tool_name: "specific_tool_name"  # Only expose specific tool
+    connection_params:
+      type: stdio
+      command: "mcp-server-command"
+      args: ["arg1", "arg2"]
+```
+
+#### **Environment Variables**
+Pass environment variables to MCP servers:
+```yaml
+tools:
+  - tool_type: mcp
+    connection_params:
+      type: stdio
+      command: "my-mcp-server"
+    environment_variables:
+      API_KEY: ${MY_API_KEY}
+      DEBUG_MODE: "true"
+      CONFIG_PATH: "/etc/myconfig"
+```
+
+### **🧪 Testing Strategy for YAML-Only MCP Agents**
+
+#### **Test Structure Convention**
+Tests follow the established convention: `src/<agent_name>/tests/test_<agent_name>.py`
+
+#### **What We Test**
+For **YAML-only MCP agents**, we test:
+
+1. **YAML Configuration Syntax** - Valid YAML structure and syntax
+2. **Agent Configuration Structure** - Required fields and proper configuration
+3. **MCP Server Availability** - MCP server installation and startup
+4. **Agent Instructions** - Proper instruction content and capabilities
+5. **Agent Card Configuration** - Skills, input/output modes, and descriptions
+6. **Shared Config Integration** - Proper inclusion of shared configuration
+
+#### **What We DON'T Test**
+- Custom Python logic (none exists in YAML-only agents)
+- Tool implementation (handled by MCP servers)
+- Error handling logic (handled by SAM and MCP servers)
+- State management (handled by SAM built-in runner)
+
+#### **Test Implementation Example**
+```python
+import yaml
+import pytest
+import subprocess
+from pathlib import Path
+
+class TestMCPAgent:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test environment"""
+        self.config_dir = Path("configs/agents")
+        self.agent_config_file = "filesystem_mcp_agent.yaml"
+        self.mcp_server = "@modelcontextprotocol/server-filesystem"
+    
+    def load_config_with_includes(self):
+        """Load YAML config file and resolve !include directives"""
+        config_path = self.config_dir / self.agent_config_file
+        
+        # Read the main config file
+        with open(config_path, 'r') as f:
+            content = f.read()
+        
+        # Handle the !include directive by reading the shared config
+        if '!include ../shared_config.yaml' in content:
+            shared_config_path = Path("configs/shared_config.yaml")
+            if shared_config_path.exists():
+                with open(shared_config_path, 'r') as f:
+                    shared_content = f.read()
+                
+                # Replace the include directive with the actual shared config content
+                content = content.replace('!include ../shared_config.yaml', shared_content)
+            else:
+                # If shared config doesn't exist, comment out the include
+                content = content.replace('!include ../shared_config.yaml', '# !include ../shared_config.yaml')
+        
+        # Parse the merged content
+        return yaml.safe_load(content)
+    
+    def test_yaml_syntax(self):
+        """Test YAML configuration syntax"""
+        config_path = self.config_dir / self.agent_config_file
+        
+        # Check if config file exists
+        assert config_path.exists(), f"Configuration file not found: {config_path}"
+        
+        # Test YAML syntax by handling the !include directive
+        try:
+            config = self.load_config_with_includes()
+            
+            # Basic structure validation
+            assert 'apps' in config, "Missing 'apps' section in YAML"
+            assert len(config['apps']) > 0, "No apps defined in configuration"
+            
+            # Check for specific app
+            app_found = False
+            for app in config['apps']:
+                if app.get('name') == f"{self.agent_config_file.replace('.yaml', '')}_app":
+                    app_found = True
+                    break
+            
+            assert app_found, f"App not found in configuration"
+            
+        except yaml.YAMLError as e:
+            pytest.fail(f"YAML syntax error: {str(e)}")
+        except Exception as e:
+            pytest.fail(f"Unexpected error reading YAML: {str(e)}")
+    
+    def test_mcp_server_availability(self):
+        """Test if the MCP server is available and can start"""
+        try:
+            # Test MCP server startup
+            cmd = ["npx", "-y", self.mcp_server]
+            
+            # Run with timeout to avoid hanging
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            # Most MCP servers exit with 0 or 1 after initialization
+            assert process.returncode in [0, 1], f"MCP server exited with unexpected code: {process.returncode}"
+            
+        except subprocess.TimeoutExpired:
+            # Timeout usually means server started successfully
+            pass
+        except FileNotFoundError:
+            pytest.skip("npx command not found - Node.js/NPM not installed")
+        except Exception as e:
+            pytest.fail(f"Unexpected error testing MCP server: {str(e)}")
+```
+
+#### **Running Tests**
+```bash
+# Run tests for a specific agent
+cd src/filesystem_mcp_agent
+python -m pytest tests/test_filesystem_mcp_agent.py -v
+
+# Run all MCP agent tests
+python run_all_mcp_tests.py
+
+# Install test dependencies
+pip install -r requirements.txt
+```
+
+#### **Test Dependencies**
+```txt
+# requirements.txt
+pytest>=7.0.0
+PyYAML>=6.0
+solace-agent-mesh>=2.0.0
+```
+
+### **🔍 Verification Scripts**
+
+#### **MCP Agent Verification**
+The `verify_mcp_agent.py` script provides comprehensive verification of MCP agent deployments:
+
+```bash
+# Verify with interactive selection
+python verify_mcp_agent.py /path/to/sam
+
+# Verify specific MCP agent
+python verify_mcp_agent.py /path/to/sam filesystem_mcp_agent
+
+# Show help and usage
+python verify_mcp_agent.py --help
+```
+
+#### **What the Verification Script Checks**
+- ✅ **Agent Configuration Files** - YAML configs are in place and valid
+- ✅ **Shared Configuration** - Proper setup and inclusion
+- ✅ **MCP Server Availability** - Server installation and connectivity
+- ✅ **SAM Environment** - CLI availability and environment setup
+- ✅ **Deployment Information** - Deployment artifacts and start scripts
+
+#### **Verification Output Example**
+```
+🔍 Verifying filesystem_mcp_agent MCP Agent Deployment
+============================================================
+📁 Checking deployment paths...
+✅ agent_config: /path/to/sam/configs/agents/filesystem_mcp_agent.yaml
+✅ shared_config: /path/to/sam/configs/shared_config.yaml
+✅ deployment_info: /path/to/sam/src/filesystem_mcp_agent/deployment_info.txt
+✅ start_script: /path/to/sam/start_mcp_agent.sh
+
+🔍 Checking agent configuration...
+✅ apps section found
+✅ agent_name field present
+✅ display_name field present
+✅ model field present
+✅ tools field present
+✅ instruction field present
+✅ MCP tools configured (1 tools)
+✅ stdio connection type configured
+✅ MCP server command and args configured
+✅ Agent card configured
+✅ agent_card.description present
+✅ agent_card.defaultInputModes present
+✅ agent_card.defaultOutputModes present
+✅ agent_card.skills present
+
+🔧 Checking MCP Server Availability
+========================================
+🔍 Checking MCP server: @modelcontextprotocol/server-filesystem
+✅ MCP server @modelcontextprotocol/server-filesystem is available
+
+🎉 MCP Agent Deployment Verification: SUCCESS
+✅ All files and configurations are in place
+✅ MCP agent is ready to run with SAM
+```
+
+### **📚 Documentation Requirements**
+
+#### **Required Documentation Files**
+Each MCP agent must have **two documentation files**:
+
+**📖 README.md (Quick Start & Overview)**
+- What the MCP agent does
+- MCP server setup and configuration
+- Available MCP tools
+- Installation & setup
+- Test status
+- Use cases
+- Project structure
+- Development guidelines
+
+**📋 API_REFERENCE.md (Detailed Documentation)**
+- Detailed MCP tool descriptions
+- MCP server configuration
+- Tool parameter specifications
+- Return value formats
+- Example usage
+- Error handling
+- Troubleshooting guide
+
+### **🔑 Environment Variable Management**
+
+#### **MCP Server Environment Variables**
+```bash
+# src/mcp_agent/.env.sample
+# MCP Server Configuration
+MCP_SERVER_COMMAND=mcp-server-command
+MCP_SERVER_ARGS=arg1,arg2
+MCP_SERVER_TIMEOUT=30
+
+# Authentication (if required)
+MCP_AUTH_TOKEN=your_auth_token_here
+MCP_API_KEY=your_api_key_here
+
+# Debugging
+MCP_DEBUG_MODE=false
+MCP_LOG_LEVEL=INFO
+```
+
+#### **MCP Server Validation**
+```python
+def validate_mcp_server_config():
+    """Validate MCP server configuration"""
+    required_vars = [
+        'MCP_SERVER_COMMAND',
+        'MCP_SERVER_ARGS'
+    ]
+    
+    for var in required_vars:
+        if not os.getenv(var):
+            raise ValueError(f"Missing required environment variable: {var}")
+```
+
+### **🚀 Deployment Best Practices**
+
+#### **MCP Server Dependencies**
+Each MCP agent must have its own `requirements.txt` file:
+```txt
+# src/mcp_agent/requirements.txt
+# MCP-specific dependencies
+mcp-client>=1.0.0
+mcp-server-utils>=1.0.0
+
+# Testing dependencies
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.10.0
+
+# SAM dependencies (inherited)
+google-adk-tools
+solace-ai-connector
+```
+
+#### **MCP Server Setup Scripts**
+```bash
+#!/bin/bash
+# scripts/setup_mcp_server.sh
+
+# Install MCP server dependencies
+npm install -g @modelcontextprotocol/server-filesystem
+
+# Create working directory
+mkdir -p /tmp/mcp_workspace
+
+# Set up environment variables
+export MCP_SERVER_COMMAND="npx"
+export MCP_SERVER_ARGS="-y @modelcontextprotocol/server-filesystem /tmp/mcp_workspace"
+
+echo "MCP server setup complete"
+```
+
+### **🎯 Development Workflow**
+
+#### **Phase 1: Planning**
+- Identify MCP server to integrate with
+- Plan connection type and configuration
+- Design tool filtering strategy
+- Plan error handling and recovery
+- Design testing strategy
+
+#### **Phase 2: Implementation**
+- **Create YAML-only MCP agent configuration**:
+  ```bash
+  # Create only the necessary directories
+  mkdir -p configs/agents/
+  
+  # Create only the YAML configuration file
+  touch configs/agents/<mcp_agent_name>.yaml
+  ```
+- Configure MCP server connection in YAML
+- Define agent instructions and capabilities
+- Set up agent discovery and communication
+- No custom code needed - SAM handles everything
+
+#### **Phase 3: Testing**
+- **MCP Server Tests**: Test server connectivity independently
+- **YAML Validation**: Validate YAML configuration syntax
+- **Agent Startup**: Test agent startup in SAM environment
+- **Tool Discovery**: Verify MCP tools are properly exposed
+- **Documentation**: Update README.md with agent details
+
+#### **Phase 4: Deployment**
+- Copy YAML configuration to SAM installation
+- Verify MCP server availability
+- Test agent startup and tool discovery
+- Deploy and monitor agent performance
+
+#### **Phase 5: Maintenance**
+- Monitor MCP server health
+- Update MCP server configuration as needed
+- Maintain tool compatibility
+- Update documentation
+
+### **🔧 Common MCP Integration Patterns**
+
+#### **Filesystem MCP Agent**
+```yaml
+# Example: Filesystem MCP Agent
+tools:
+  - tool_type: mcp
+    connection_params:
+      type: stdio
+      command: "npx"
+      args:
+        - "-y"
+        - "@modelcontextprotocol/server-filesystem"
+        - "/tmp/samv2"
+```
+
+#### **Database MCP Agent**
+```yaml
+# Example: Database MCP Agent
+tools:
+  - tool_type: mcp
+    connection_params:
+      type: stdio
+      command: "python"
+      args:
+        - "-m"
+        - "mcp_server_database"
+        - "--connection-string"
+        - "${DATABASE_URL}"
+    environment_variables:
+      DATABASE_URL: ${DATABASE_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+```
+
+#### **API MCP Agent**
+```yaml
+# Example: API MCP Agent
+tools:
+  - tool_type: mcp
+    connection_params:
+      type: sse
+      url: "https://api-mcp-server.example.com/v1/sse"
+      headers:
+        Authorization: "Bearer ${API_MCP_TOKEN}"
+    environment_variables:
+      API_MCP_TOKEN: ${API_MCP_TOKEN}
+```
+
+### **⚠️ Common Pitfalls and Solutions**
+
+#### **MCP Server Connection Issues**
+- **Problem**: MCP server fails to start
+- **Solution**: Check command and arguments, verify dependencies
+- **Prevention**: Test MCP server independently before integration
+
+#### **Tool Discovery Failures**
+- **Problem**: Agent can't discover MCP tools
+- **Solution**: Check MCP server configuration and connection parameters
+- **Prevention**: Implement proper error handling and logging
+
+#### **Authentication Issues**
+- **Problem**: MCP server authentication fails
+- **Solution**: Verify environment variables and authentication tokens
+- **Prevention**: Use secure environment variable management
+
+#### **Resource Management**
+- **Problem**: MCP server resources not properly managed
+- **Solution**: Implement proper lifecycle management
+- **Prevention**: Use connection pooling and resource cleanup
+
+### **📈 Best Practices**
+
+#### **MCP Server Selection**
+- Choose well-maintained MCP servers
+- Verify compatibility with SAM framework
+- Check for active community support
+- Review security considerations
+
+#### **Configuration Management**
+- Use environment variables for sensitive data
+- Implement configuration validation
+- Provide clear setup instructions
+- Document all configuration options
+
+#### **Error Handling**
+- Implement comprehensive error handling
+- Provide meaningful error messages
+- Implement retry mechanisms
+- Log all errors for debugging
+
+#### **Testing Strategy**
+- Test MCP server independently
+- Test tool functionality thoroughly
+- Test error scenarios
+- Test integration with SAM
+
+#### **Security Considerations**
+- Secure authentication mechanisms
+- Validate all inputs
+- Implement proper authorization
+- Audit all MCP tool usage
+
+---
+
+*This document serves as the comprehensive guide for Solace Agent Mesh MCP agent development, incorporating all best practices and patterns for successful MCP integration.*
+description:
+globs:
+alwaysApply: true
+---
