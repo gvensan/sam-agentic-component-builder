@@ -98,18 +98,23 @@ def _get_similar_countries(country_name: str, all_countries: List[Dict[str, Any]
     return similar
 
 
-async def get_country_info(country_name: str, context: ToolContext) -> Dict[str, Any]:
+async def get_country_info(
+    country_name: str, 
+    tool_context: Optional[ToolContext] = None,
+    tool_config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Get comprehensive information about a specific country.
     
     Args:
         country_name: Country name, code, or partial match
-        context: Tool context
+        tool_context: Tool context (optional)
+        tool_config: Tool configuration (optional)
     
     Returns:
         Dictionary with country information
     """
-    log_identifier = f"[{context.agent_name}:get_country_info]"
+    log_identifier = f"[CountryInformationAgent:get_country_info]"
     log.info(f"{log_identifier} Getting country info for: {country_name}")
     
     try:
@@ -122,11 +127,15 @@ async def get_country_info(country_name: str, context: ToolContext) -> Dict[str,
             country_data = result["data"][0] if isinstance(result["data"], list) else result["data"]
             formatted_data = _format_country_data(country_data)
             
-            # Update statistics
-            stats = context.get_agent_specific_state("statistics", {})
-            stats["total_requests"] = stats.get("total_requests", 0) + 1
-            stats["successful_requests"] = stats.get("successful_requests", 0) + 1
-            context.set_agent_specific_state("statistics", stats)
+            # Update statistics if context is available
+            if tool_context:
+                try:
+                    stats = tool_context.get_agent_specific_state("statistics", {})
+                    stats["total_requests"] = stats.get("total_requests", 0) + 1
+                    stats["successful_requests"] = stats.get("successful_requests", 0) + 1
+                    tool_context.set_agent_specific_state("statistics", stats)
+                except Exception as e:
+                    log.warning(f"{log_identifier} Could not update statistics: {e}")
             
             return {
                 "status": "success",
@@ -143,11 +152,15 @@ async def get_country_info(country_name: str, context: ToolContext) -> Dict[str,
                 country_data = result["data"][0] if isinstance(result["data"], list) else result["data"]
                 formatted_data = _format_country_data(country_data)
                 
-                # Update statistics
-                stats = context.get_agent_specific_state("statistics", {})
-                stats["total_requests"] = stats.get("total_requests", 0) + 1
-                stats["successful_requests"] = stats.get("successful_requests", 0) + 1
-                context.set_agent_specific_state("statistics", stats)
+                # Update statistics if context is available
+                if tool_context:
+                    try:
+                        stats = tool_context.get_agent_specific_state("statistics", {})
+                        stats["total_requests"] = stats.get("total_requests", 0) + 1
+                        stats["successful_requests"] = stats.get("successful_requests", 0) + 1
+                        tool_context.set_agent_specific_state("statistics", stats)
+                    except Exception as e:
+                        log.warning(f"{log_identifier} Could not update statistics: {e}")
                 
                 return {
                     "status": "success",
@@ -163,11 +176,15 @@ async def get_country_info(country_name: str, context: ToolContext) -> Dict[str,
                 if all_countries_result["status"] == "success":
                     suggestions = _get_similar_countries(country_name, all_countries_result["data"])
                 
-                # Update statistics
-                stats = context.get_agent_specific_state("statistics", {})
-                stats["total_requests"] = stats.get("total_requests", 0) + 1
-                stats["failed_requests"] = stats.get("failed_requests", 0) + 1
-                context.set_agent_specific_state("statistics", stats)
+                # Update statistics if context is available
+                if tool_context:
+                    try:
+                        stats = tool_context.get_agent_specific_state("statistics", {})
+                        stats["total_requests"] = stats.get("total_requests", 0) + 1
+                        stats["failed_requests"] = stats.get("failed_requests", 0) + 1
+                        tool_context.set_agent_specific_state("statistics", stats)
+                    except Exception as e:
+                        log.warning(f"{log_identifier} Could not update statistics: {e}")
                 
                 return {
                     "status": "error",
@@ -179,11 +196,15 @@ async def get_country_info(country_name: str, context: ToolContext) -> Dict[str,
     except Exception as e:
         log.error(f"{log_identifier} Error getting country info: {e}")
         
-        # Update statistics
-        stats = context.get_agent_specific_state("statistics", {})
-        stats["total_requests"] = stats.get("total_requests", 0) + 1
-        stats["failed_requests"] = stats.get("failed_requests", 0) + 1
-        context.set_agent_specific_state("statistics", stats)
+        # Update statistics if context is available
+        if tool_context:
+            try:
+                stats = tool_context.get_agent_specific_state("statistics", {})
+                stats["total_requests"] = stats.get("total_requests", 0) + 1
+                stats["failed_requests"] = stats.get("failed_requests", 0) + 1
+                tool_context.set_agent_specific_state("statistics", stats)
+            except Exception as e:
+                log.warning(f"{log_identifier} Could not update statistics: {e}")
         
         return {
             "status": "error",
@@ -192,18 +213,23 @@ async def get_country_info(country_name: str, context: ToolContext) -> Dict[str,
         }
 
 
-async def search_countries(search_term: str, context: ToolContext) -> Dict[str, Any]:
+async def search_countries(
+    search_term: str, 
+    tool_context: Optional[ToolContext] = None,
+    tool_config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Search for countries by name or partial match.
     
     Args:
         search_term: Search term for country name
-        context: Tool context
+        tool_context: Tool context (optional)
+        tool_config: Tool configuration (optional)
     
     Returns:
         Dictionary with matching countries
     """
-    log_identifier = f"[{context.agent_name}:search_countries]"
+    log_identifier = f"[CountryInformationAgent:search_countries]"
     log.info(f"{log_identifier} Searching countries for: {search_term}")
     
     try:
@@ -224,11 +250,15 @@ async def search_countries(search_term: str, context: ToolContext) -> Dict[str, 
                     "flag": country.get("flags", {}).get("png", "")
                 })
             
-            # Update statistics
-            stats = context.get_agent_specific_state("statistics", {})
-            stats["total_requests"] = stats.get("total_requests", 0) + 1
-            stats["successful_requests"] = stats.get("successful_requests", 0) + 1
-            context.set_agent_specific_state("statistics", stats)
+            # Update statistics if context is available
+            if tool_context:
+                try:
+                    stats = tool_context.get_agent_specific_state("statistics", {})
+                    stats["total_requests"] = stats.get("total_requests", 0) + 1
+                    stats["successful_requests"] = stats.get("successful_requests", 0) + 1
+                    tool_context.set_agent_specific_state("statistics", stats)
+                except Exception as e:
+                    log.warning(f"{log_identifier} Could not update statistics: {e}")
             
             return {
                 "status": "success",
@@ -239,11 +269,15 @@ async def search_countries(search_term: str, context: ToolContext) -> Dict[str, 
                 "cached": result.get("cached", False)
             }
         else:
-            # Update statistics
-            stats = context.get_agent_specific_state("statistics", {})
-            stats["total_requests"] = stats.get("total_requests", 0) + 1
-            stats["failed_requests"] = stats.get("failed_requests", 0) + 1
-            context.set_agent_specific_state("statistics", stats)
+            # Update statistics if context is available
+            if tool_context:
+                try:
+                    stats = tool_context.get_agent_specific_state("statistics", {})
+                    stats["total_requests"] = stats.get("total_requests", 0) + 1
+                    stats["failed_requests"] = stats.get("failed_requests", 0) + 1
+                    tool_context.set_agent_specific_state("statistics", stats)
+                except Exception as e:
+                    log.warning(f"{log_identifier} Could not update statistics: {e}")
             
             return {
                 "status": "error",
@@ -254,11 +288,15 @@ async def search_countries(search_term: str, context: ToolContext) -> Dict[str, 
     except Exception as e:
         log.error(f"{log_identifier} Error searching countries: {e}")
         
-        # Update statistics
-        stats = context.get_agent_specific_state("statistics", {})
-        stats["total_requests"] = stats.get("total_requests", 0) + 1
-        stats["failed_requests"] = stats.get("failed_requests", 0) + 1
-        context.set_agent_specific_state("statistics", stats)
+        # Update statistics if context is available
+        if tool_context:
+            try:
+                stats = tool_context.get_agent_specific_state("statistics", {})
+                stats["total_requests"] = stats.get("total_requests", 0) + 1
+                stats["failed_requests"] = stats.get("failed_requests", 0) + 1
+                tool_context.set_agent_specific_state("statistics", stats)
+            except Exception as e:
+                log.warning(f"{log_identifier} Could not update statistics: {e}")
         
         return {
             "status": "error",
@@ -267,23 +305,28 @@ async def search_countries(search_term: str, context: ToolContext) -> Dict[str, 
         }
 
 
-async def get_country_borders(country_name: str, context: ToolContext) -> Dict[str, Any]:
+async def get_country_borders(
+    country_name: str, 
+    tool_context: Optional[ToolContext] = None,
+    tool_config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Get border information and neighboring countries.
     
     Args:
         country_name: Country name or code
-        context: Tool context
+        tool_context: Tool context (optional)
+        tool_config: Tool configuration (optional)
     
     Returns:
         Dictionary with border information
     """
-    log_identifier = f"[{context.agent_name}:get_country_borders]"
+    log_identifier = f"[CountryInformationAgent:get_country_borders]"
     log.info(f"{log_identifier} Getting borders for: {country_name}")
     
     try:
         # First get the country info
-        country_result = await get_country_info(country_name, context)
+        country_result = await get_country_info(country_name, tool_context)
         
         if country_result["status"] == "success":
             country_data = country_result["data"]
@@ -328,18 +371,23 @@ async def get_country_borders(country_name: str, context: ToolContext) -> Dict[s
         }
 
 
-async def get_country_comparison(country_names: List[str], context: ToolContext) -> Dict[str, Any]:
+async def get_country_comparison(
+    country_names: List[str], 
+    tool_context: Optional[ToolContext] = None,
+    tool_config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Compare multiple countries side by side.
     
     Args:
         country_names: List of 2-5 country names to compare
-        context: Tool context
+        tool_context: Tool context (optional)
+        tool_config: Tool configuration (optional)
     
     Returns:
         Dictionary with comparison data
     """
-    log_identifier = f"[{context.agent_name}:get_country_comparison]"
+    log_identifier = f"[CountryInformationAgent:get_country_comparison]"
     log.info(f"{log_identifier} Comparing countries: {country_names}")
     
     try:
@@ -360,7 +408,7 @@ async def get_country_comparison(country_names: List[str], context: ToolContext)
         comparison_data = []
         
         for country_name in country_names:
-            country_result = await get_country_info(country_name, context)
+            country_result = await get_country_info(country_name, tool_context)
             
             if country_result["status"] == "success":
                 country_data = country_result["data"]
@@ -401,17 +449,21 @@ async def get_country_comparison(country_names: List[str], context: ToolContext)
         }
 
 
-async def get_all_countries(context: ToolContext) -> Dict[str, Any]:
+async def get_all_countries(
+    tool_context: Optional[ToolContext] = None,
+    tool_config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Get list of all countries with basic information.
     
     Args:
-        context: Tool context
+        tool_context: Tool context (optional)
+        tool_config: Tool configuration (optional)
     
     Returns:
         Dictionary with all countries
     """
-    log_identifier = f"[{context.agent_name}:get_all_countries]"
+    log_identifier = f"[CountryInformationAgent:get_all_countries]"
     log.info(f"{log_identifier} Getting all countries")
     
     try:
@@ -436,11 +488,15 @@ async def get_all_countries(context: ToolContext) -> Dict[str, Any]:
             # Sort by name
             formatted_countries.sort(key=lambda x: x["name"])
             
-            # Update statistics
-            stats = context.get_agent_specific_state("statistics", {})
-            stats["total_requests"] = stats.get("total_requests", 0) + 1
-            stats["successful_requests"] = stats.get("successful_requests", 0) + 1
-            context.set_agent_specific_state("statistics", stats)
+            # Update statistics if context is available
+            if tool_context:
+                try:
+                    stats = tool_context.get_agent_specific_state("statistics", {})
+                    stats["total_requests"] = stats.get("total_requests", 0) + 1
+                    stats["successful_requests"] = stats.get("successful_requests", 0) + 1
+                    tool_context.set_agent_specific_state("statistics", stats)
+                except Exception as e:
+                    log.warning(f"{log_identifier} Could not update statistics: {e}")
             
             return {
                 "status": "success",
@@ -451,11 +507,15 @@ async def get_all_countries(context: ToolContext) -> Dict[str, Any]:
                 "cached": result.get("cached", False)
             }
         else:
-            # Update statistics
-            stats = context.get_agent_specific_state("statistics", {})
-            stats["total_requests"] = stats.get("total_requests", 0) + 1
-            stats["failed_requests"] = stats.get("failed_requests", 0) + 1
-            context.set_agent_specific_state("statistics", stats)
+            # Update statistics if context is available
+            if tool_context:
+                try:
+                    stats = tool_context.get_agent_specific_state("statistics", {})
+                    stats["total_requests"] = stats.get("total_requests", 0) + 1
+                    stats["failed_requests"] = stats.get("failed_requests", 0) + 1
+                    tool_context.set_agent_specific_state("statistics", stats)
+                except Exception as e:
+                    log.warning(f"{log_identifier} Could not update statistics: {e}")
             
             return {
                 "status": "error",
@@ -466,11 +526,15 @@ async def get_all_countries(context: ToolContext) -> Dict[str, Any]:
     except Exception as e:
         log.error(f"{log_identifier} Error getting all countries: {e}")
         
-        # Update statistics
-        stats = context.get_agent_specific_state("statistics", {})
-        stats["total_requests"] = stats.get("total_requests", 0) + 1
-        stats["failed_requests"] = stats.get("failed_requests", 0) + 1
-        context.set_agent_specific_state("statistics", stats)
+        # Update statistics if context is available
+        if tool_context:
+            try:
+                stats = tool_context.get_agent_specific_state("statistics", {})
+                stats["total_requests"] = stats.get("total_requests", 0) + 1
+                stats["failed_requests"] = stats.get("failed_requests", 0) + 1
+                tool_context.set_agent_specific_state("statistics", stats)
+            except Exception as e:
+                log.warning(f"{log_identifier} Could not update statistics: {e}")
         
         return {
             "status": "error",

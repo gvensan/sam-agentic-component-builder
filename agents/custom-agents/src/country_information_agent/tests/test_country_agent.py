@@ -7,6 +7,7 @@ This module contains comprehensive tests for the Country Information Agent tools
 import sys
 import os
 import asyncio
+import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 
@@ -121,6 +122,7 @@ class TestCountryAgent:
         assert formatted[1]["name"] == "English"
     
     @patch('country_information_agent.tools.get_country_service')
+    @pytest.mark.asyncio
     async def test_get_country_info_success(self, mock_get_service):
         """Test successful country info retrieval"""
         # Mock the service
@@ -143,6 +145,7 @@ class TestCountryAgent:
         assert "timestamp" in result
     
     @patch('country_information_agent.tools.get_country_service')
+    @pytest.mark.asyncio
     async def test_get_country_info_not_found(self, mock_get_service):
         """Test country info when country not found"""
         # Mock the service
@@ -170,6 +173,7 @@ class TestCountryAgent:
         assert "suggestions" in result
     
     @patch('country_information_agent.tools.get_country_service')
+    @pytest.mark.asyncio
     async def test_search_countries_success(self, mock_get_service):
         """Test successful country search"""
         # Mock the service
@@ -191,6 +195,7 @@ class TestCountryAgent:
         assert result["source"] == "rest-countries-api"
     
     @patch('country_information_agent.tools.get_country_service')
+    @pytest.mark.asyncio
     async def test_get_country_borders_success(self, mock_get_service):
         """Test successful border retrieval"""
         # Mock the service
@@ -219,6 +224,7 @@ class TestCountryAgent:
         assert result["data"]["border_count"] == 8
         assert len(result["data"]["borders"]) == 8
     
+    @pytest.mark.asyncio
     async def test_get_country_comparison_success(self):
         """Test successful country comparison"""
         # Mock get_country_info for each country
@@ -246,6 +252,7 @@ class TestCountryAgent:
             assert len(result["data"]["countries"]) == 2
             assert "comparison_fields" in result["data"]
     
+    @pytest.mark.asyncio
     async def test_get_country_comparison_too_few(self):
         """Test country comparison with too few countries"""
         result = await get_country_comparison(["France"], self.context)
@@ -253,6 +260,7 @@ class TestCountryAgent:
         assert result["status"] == "error"
         assert "At least 2 countries" in result["error"]
     
+    @pytest.mark.asyncio
     async def test_get_country_comparison_too_many(self):
         """Test country comparison with too many countries"""
         result = await get_country_comparison(["A", "B", "C", "D", "E", "F"], self.context)
@@ -261,6 +269,7 @@ class TestCountryAgent:
         assert "Maximum 5 countries" in result["error"]
     
     @patch('country_information_agent.tools.get_country_service')
+    @pytest.mark.asyncio
     async def test_get_all_countries_success(self, mock_get_service):
         """Test successful retrieval of all countries"""
         # Mock the service
@@ -282,6 +291,7 @@ class TestCountryAgent:
         assert result["source"] == "rest-countries-api"
     
     @patch('country_information_agent.tools.get_country_service')
+    @pytest.mark.asyncio
     async def test_service_error_handling(self, mock_get_service):
         """Test error handling when service fails"""
         # Mock the service to raise an exception
