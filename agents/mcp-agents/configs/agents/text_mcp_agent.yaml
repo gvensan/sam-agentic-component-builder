@@ -1,19 +1,16 @@
 # Text MCP Agent Configuration
 # Minimal YAML-only MCP agent using SAM's built-in runner
 
-!include ../shared_config.yaml
-
 apps:
   - name: text_mcp_agent_app
     app_module: solace_agent_mesh.agent.sac.app
     app_base_path: .
     broker:
-      <<: *broker_connection
     app_config:
+      namespace: ${NAMESPACE}
       agent_name: "TextMCPAgent"
       display_name: "Text MCP Agent"
       supports_streaming: true
-      model: *general_model
       
       instruction: |
         You are a Text MCP Agent that provides text processing, search, and manipulation capabilities.
@@ -42,8 +39,14 @@ apps:
             command: "npx"
             args: ["-y", "@modelcontextprotocol/server-text"]
       
-      session_service: *default_session_service
-      artifact_service: *default_artifact_service
+      session_service:
+        type: "memory"
+        default_behavior: "PERSISTENT"
+      
+      artifact_service:
+        type: "filesystem"
+        base_path: "/tmp/samv2"
+        artifact_scope: namespace
       
       # Agent discovery and communication
       agent_card:

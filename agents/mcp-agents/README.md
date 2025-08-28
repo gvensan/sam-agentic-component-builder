@@ -1,3 +1,6 @@
+![Work in Progress](wip.png)
+
+
 # 🚀 MCP Agents for Solace Agent Mesh (SAM)
 
 This directory contains **YAML-only MCP agents** for **Solace Agent Mesh (SAM)** - demonstrating the minimal approach to MCP integration using SAM's built-in runner.

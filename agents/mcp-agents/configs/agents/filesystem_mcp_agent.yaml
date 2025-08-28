@@ -10,6 +10,7 @@ apps:
     broker:
       <<: *broker_connection
     app_config:
+      namespace: ${NAMESPACE}
       agent_name: "FilesystemMCPAgent"
       display_name: "File System MCP Agent"
       supports_streaming: true
